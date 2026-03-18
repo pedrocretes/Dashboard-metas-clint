@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clint Metas CS</title>
+<style>
+  /* System font stack — sem dependência externa */
+  :root {
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --green: #1D9E75;
+  --green-light: #E1F5EE;
+  --green-dark: #0F6E56;
+  --amber: #BA7517;
+  --amber-light: #FAEEDA;
+  --red: #E24B4A;
+  --red-light: #FCEBEB;
+  --red-dark: #A32D2D;
+  --blue-light: #E6F1FB;
+  --blue: #185FA5;
+  --bg: #F7F6F3;
+  --surface: #FFFFFF;
+  --surface2: #F0EFE9;
+  --border: rgba(0,0,0,0.08);
+  --border-med: rgba(0,0,0,0.14);
+  --text: #1A1A18;
+  --text-2: #6B6A63;
+  --text-3: #9E9D96;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* TOPBAR */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+.logo em { color: var(--green); font-style: normal; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.badge {
+  font-size: 11px; font-weight: 500; padding: 3px 10px;
+  border-radius: 20px; letter-spacing: 0.02em;
+}
+.badge-cs { background: var(--blue-light); color: var(--blue); }
+.badge-sup { background: var(--green-light); color: var(--green-dark); }
+.badge-admin { background: var(--amber-light); color: var(--amber); }
+.user-name { font-size: 13px; font-weight: 500; color: var(--text-2); }
+
+/* SIDEBAR */
+.layout { display: flex; min-height: calc(100vh - 52px); }
+.sidebar {
+  width: 200px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 10px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: var(--radius);
+  cursor: pointer; font-size: 13px; font-weight: 400;
+  color: var(--text-2); transition: all 0.12s;
+  user-select: none;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--green-light); color: var(--green-dark); font-weight: 500; }
+.nav-icon { width: 16px; text-align: center; font-size: 14px; }
+.nav-section { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; padding: 12px 10px 4px; }
+.sidebar-footer { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
+.logout-btn { width: 100%; padding: 7px 10px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 12px; font-family: 'DM Sans', sans-serif; color: var(--text-2); text-align: left; transition: all 0.12s; display: flex; align-items: center; gap: 8px; }
+.logout-btn:hover { background: var(--red-light); color: var(--red-dark); border-color: var(--red-light); }
+
+/* LOGIN */
+.login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 36px 32px; width: 380px; box-shadow: var(--shadow-md); }
+.login-logo { font-size: 20px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 6px; }
+.login-logo em { color: var(--green); font-style: normal; }
+.login-sub { font-size: 13px; color: var(--text-3); margin-bottom: 28px; }
+.login-field { margin-bottom: 14px; }
+.login-field label { display: block; font-size: 11px; font-weight: 500; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.login-field input { width: 100%; border: 1px solid var(--border-med); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--bg); transition: border-color 0.15s; }
+.login-field input:focus { outline: none; border-color: var(--green); }
+.login-error { font-size: 12px; color: var(--red-dark); background: var(--red-light); padding: 8px 12px; border-radius: var(--radius); margin-bottom: 14px; display: none; }
+.login-error.show { display: block; }
+.btn-login { width: 100%; padding: 11px; border-radius: var(--radius); border: none; background: var(--green); color: #fff; font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; transition: background 0.12s; margin-top: 4px; }
+.btn-login:hover { background: var(--green-dark); }
+
+/* MAIN */
+.main { flex: 1; padding: 24px; overflow-y: auto; }
+
+/* PAGE */
+.page { display: none; }
+.page.active { display: block; }
+
+/* PAGE HEADER */
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.page-title { font-size: 18px; font-weight: 600; letter-spacing: -0.4px; }
+.page-sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+/* MONTH TABS */
+.month-strip { display: flex; gap: 3px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; width: fit-content; }
+.mtab { font-size: 11px; font-weight: 500; padding: 5px 11px; border-radius: 7px; cursor: pointer; color: var(--text-2); transition: all 0.12s; white-space: nowrap; }
+.mtab:hover { background: var(--surface2); color: var(--text); }
+.mtab.active { background: var(--green); color: #fff; }
+
+/* STAT ROW */
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow); }
+.stat-label { font-size: 11px; color: var(--text-2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.stat-value { font-size: 28px; font-weight: 300; letter-spacing: -1px; }
+.stat-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.c-green { color: var(--green-dark); }
+.c-amber { color: var(--amber); }
+.c-red { color: var(--red-dark); }
+.c-muted { color: var(--text-3); }
+
+/* METRICS GRID */
+.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.metric-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px;
+  box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; text-align: center;
+  position: relative; overflow: hidden;
+}
+.metric-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.metric-card.ok::before { background: var(--green); }
+.metric-card.warn::before { background: var(--amber); }
+.metric-card.bad::before { background: var(--red); }
+.metric-card.empty::before { background: var(--border); }
+.metric-name { font-size: 11px; font-weight: 500; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.metric-chart-wrap { position: relative; width: 100px; height: 100px; margin-bottom: 8px; }
+.metric-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 500; letter-spacing: -0.5px; }
+.metric-detail { font-size: 11px; color: var(--text-3); }
+.metric-detail strong { color: var(--text-2); font-weight: 500; }
+.edit-btn {
+  position: absolute; top: 10px; right: 10px;
+  width: 24px; height: 24px; border-radius: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; opacity: 0; transition: opacity 0.15s;
+}
+.metric-card:hover .edit-btn { opacity: 1; }
+
+/* BOTTOM ROW */
+.bottom-row { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow); }
+.card-title { font-size: 13px; font-weight: 600; margin-bottom: 14px; letter-spacing: -0.2px; }
+
+/* LINE CHART */
+.chart-wrap { height: 150px; position: relative; }
+
+/* QUALITATIVE */
+.qual-field { margin-bottom: 12px; }
+.qual-label { font-size: 11px; font-weight: 500; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.qual-input {
+  width: 100%; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 10px; font-size: 12px; font-family: 'DM Sans', sans-serif;
+  color: var(--text); background: var(--bg); resize: vertical; min-height: 48px;
+  transition: border-color 0.15s;
+}
+.qual-input:focus { outline: none; border-color: var(--green); }
+
+/* SUPERVISOR TABLE */
+.sup-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sup-table th { text-align: left; font-size: 10px; font-weight: 600; color: var(--text-3); padding: 0 12px 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+.sup-table td { padding: 10px 12px; border-top: 1px solid var(--border); }
+.sup-table tr:hover td { background: var(--bg); }
+.avatar { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+.av-0 { background: #E1F5EE; color: #0F6E56; }
+.av-1 { background: #E6F1FB; color: #185FA5; }
+.av-2 { background: #FBEAF0; color: #993556; }
+.av-3 { background: #FAEEDA; color: #854F0B; }
+.name-cell { display: flex; align-items: center; gap: 8px; }
+.pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+.pill-g { background: var(--green-light); color: var(--green-dark); }
+.pill-a { background: var(--amber-light); color: var(--amber); }
+.pill-r { background: var(--red-light); color: var(--red-dark); }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.18s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface); border-radius: var(--radius-lg);
+  padding: 24px; width: 460px; box-shadow: var(--shadow-md);
+  transform: translateY(8px); transition: transform 0.18s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.modal-title { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+.modal-close { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-2); }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: 500; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
+.field input { border: 1px solid var(--border-med); border-radius: var(--radius); padding: 8px 10px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--bg); transition: border-color 0.15s; }
+.field input:focus { outline: none; border-color: var(--green); }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
+.btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.12s; }
+.btn-ghost { background: var(--surface2); color: var(--text-2); }
+.btn-ghost:hover { background: var(--border); }
+.btn-primary { background: var(--green); color: #fff; border-color: var(--green); }
+.btn-primary:hover { background: var(--green-dark); }
+
+/* ADMIN */
+.admin-section { margin-bottom: 24px; }
+.admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+.cs-list-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 8px; background: var(--surface); }
+.cs-list-actions { display: flex; gap: 6px; }
+.action-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-family: 'DM Sans', sans-serif; background: var(--surface2); color: var(--text-2); transition: all 0.12s; }
+.action-btn:hover { background: var(--green-light); color: var(--green-dark); border-color: var(--green-light); }
+.action-btn.danger:hover { background: var(--red-light); color: var(--red-dark); border-color: var(--red-light); }
+
+/* INLINE EDIT */
+.metric-inline-edit { width: 100%; margin-top: 6px; }
+.metric-realizado-row { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.metric-real-val { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.metric-meta-hint { font-size: 11px; color: var(--text-3); }
+.inline-edit-btn { font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-3); cursor: pointer; transition: all .12s; font-family: var(--font-sans); }
+.inline-edit-btn:hover { background: var(--green-light); color: var(--green-dark); border-color: var(--green-light); }
+.metric-edit-row { display: flex; align-items: center; gap: 4px; justify-content: center; }
+.inline-input { width: 80px; border: 1.5px solid var(--green); border-radius: 8px; padding: 5px 8px; font-size: 14px; font-family: var(--font-sans); text-align: center; background: var(--bg); color: var(--text); outline: none; }
+.inline-save-btn { width: 28px; height: 28px; border-radius: 7px; border: none; background: var(--green); color: #fff; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.inline-cancel-btn { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-3); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+
+/* SUP CHARTS GRID */
+.sup-charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--text); color: #fff;
+  padding: 10px 16px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 500;
+  transform: translateY(10px); opacity: 0;
+  transition: all 0.2s; z-index: 300;
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo"><em>Clint</em> Metas CS</div>
+    <div class="login-sub">Digite seu código de acesso</div>
+    <div class="login-error" id="login-error">Código inválido.</div>
+    <div class="login-field">
+      <label>Código de acesso</label>
+      <input type="password" id="inp-pin" placeholder="••••••" maxlength="20"
+        style="font-size:22px;letter-spacing:6px;text-align:center;"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP (hidden until login) -->
+<div id="app-shell" style="display:none;">
+  <div class="topbar">
+    <div class="logo"><em>Clint</em> Metas CS</div>
+    <div class="topbar-right">
+      <span class="user-name" id="user-name-label"></span>
+      <span class="badge" id="badge-label"></span>
+      <button onclick="doLogout()" style="font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text-2);cursor:pointer;font-family:var(--font-sans);transition:all .12s;" onmouseover="this.style.background='var(--red-light)';this.style.color='var(--red-dark)';this.style.borderColor='var(--red-light)'" onmouseout="this.style.background='var(--surface2)';this.style.color='var(--text-2)';this.style.borderColor='var(--border)'">Sair</button>
+    </div>
+  </div>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main" id="main-content"></main>
+  </div>
+</div>
+
+<!-- Modal de lançamento de métricas -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Lançar métricas</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-grid" id="modal-fields"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMetrics()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── SUPABASE ────────────────────────────────────────────────────────────────
+
+const SUPABASE_URL = 'https://fwyzsmgujgsaklgadvzk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_eZRQEGRS0D9Gkuh_4pqQTw_EwT6kYlc';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ─── AUTH — PIN por usuário ──────────────────────────────────────────────────
+
+const USERS = [
+  { id:'u1',  name:'Pedro (Admin)', initials:'PE', avIdx:0, pin:'pedro2026',     role:'admin' },
+  { id:'u2',  name:'Ronni (Admin)', initials:'RO', avIdx:1, pin:'ronni2026',     role:'admin', noMetrics:true },
+  { id:'u3',  name:'Ajota',         initials:'AJ', avIdx:2, pin:'ajota2026',     role:'cs' },
+  { id:'u4',  name:'Patrini',       initials:'PA', avIdx:3, pin:'patrini2026',   role:'cs' },
+  { id:'u5',  name:'Isadora',       initials:'IS', avIdx:0, pin:'isadora2026',   role:'cs' },
+  { id:'u6',  name:'Fábio',         initials:'FA', avIdx:1, pin:'fabio2026',     role:'cs' },
+  { id:'u7',  name:'Thayzi',        initials:'TH', avIdx:2, pin:'thayzi2026',    role:'cs' },
+  { id:'u8',  name:'Haya',          initials:'HA', avIdx:3, pin:'haya2026',      role:'cs' },
+  { id:'u9',  name:'Guilherme',     initials:'GU', avIdx:0, pin:'guilherme2026', role:'cs' },
+  { id:'u10', name:'Layzza',        initials:'LA', avIdx:1, pin:'layzza2026',    role:'cs' },
+];
+
+let CURRENT_USER = null;
+
+function doLogin() {
+  const pin   = document.getElementById('inp-pin').value.trim();
+  const errEl = document.getElementById('login-error');
+  const user  = USERS.find(u => u.pin === pin);
+  if (!user) { errEl.classList.add('show'); return; }
+  errEl.classList.remove('show');
+  CURRENT_USER = user;
+  sessionStorage.setItem('clint_session', user.id);
+  bootApp();
+}
+
+function doLogout() {
+  CURRENT_USER = null;
+  sessionStorage.removeItem('clint_session');
+  document.getElementById('inp-pin').value = '';
+  document.getElementById('app-shell').style.display  = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function tryRestoreSession() {
+  const id   = sessionStorage.getItem('clint_session');
+  const user = USERS.find(u => u.id === id);
+  if (!user) return false;
+  CURRENT_USER = user;
+  return true;
+}
+
+function bootApp() {
+  const u = CURRENT_USER;
+  document.getElementById('user-name-label').textContent = u.name;
+  const badge = document.getElementById('badge-label');
+  badge.textContent = u.role === 'admin' ? 'Admin' : 'CS Individual';
+  badge.className   = 'badge ' + (u.role === 'admin' ? 'badge-admin' : 'badge-cs');
+  STATE.currentPage = u.noMetrics ? 'sup-dash' : 'cs-dash';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display    = 'block';
+  loadFromSupabase().then(() => {
+    buildSidebar();
+    renderCurrentPage();
+  });
+}
+
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MONTHS_FULL  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+const METRIC_DEFS = [
+  { key:'conversao', label:'Conversão de renovação', unit:'%', higherBetter:true },
+  { key:'churn',     label:'Churn',                  unit:'%', higherBetter:false },
+  { key:'reeng',     label:'Reengajamento',           unit:'%', higherBetter:true },
+  { key:'cobertura', label:'Cobertura de carteira',   unit:'%', higherBetter:true },
+  { key:'reunioes',  label:'Reuniões realizadas',     unit:'',  higherBetter:true },
+  { key:'nps',       label:'NPS',                     unit:'',  higherBetter:true }
+];
+
+const DEFAULT_GOALS = { conversao:60, churn:4, reeng:25, cobertura:70, reunioes:80, nps:60 };
+
+// ─── STATE (em memória, populado pelo Supabase) ──────────────────────────────
+
+let STATE = {
+  currentCs: null,
+  currentMonth: new Date().getMonth(),
+  currentPage: 'cs-dash',
+  csList: [],
+  goals: { ...DEFAULT_GOALS },
+  metrics: {},
+  qualitative: {}
+};
+
+// ─── SUPABASE: carregar tudo ao fazer login ──────────────────────────────────
+
+async function loadFromSupabase() {
+  showLoading(true);
+  try {
+    // Carregar metas
+    const { data: goalsData } = await sb.from('goals').select('*').limit(1).single();
+    if (goalsData) {
+      STATE.goals = {
+        conversao: goalsData.conversao,
+        churn:     goalsData.churn,
+        reeng:     goalsData.reeng,
+        cobertura: goalsData.cobertura,
+        reunioes:  goalsData.reunioes,
+        nps:       goalsData.nps,
+      };
+    }
+
+    // Carregar usuários (CS's com métricas)
+    const { data: usersData } = await sb.from('users').select('*').eq('no_metrics', false);
+    if (usersData) {
+      STATE.csList = usersData.map(u => ({
+        id: u.id, name: u.name, initials: u.initials, avIdx: u.av_idx
+      }));
+    }
+
+    // Carregar métricas do ano corrente
+    const year = new Date().getFullYear();
+    const { data: metricsData } = await sb.from('metrics').select('*').eq('year', year);
+    STATE.metrics = {};
+    if (metricsData) {
+      metricsData.forEach(row => {
+        if (!STATE.metrics[row.user_id]) {
+          STATE.metrics[row.user_id] = {};
+          METRIC_DEFS.forEach(m => { STATE.metrics[row.user_id][m.key] = Array(12).fill(null); });
+          STATE.qualitative = STATE.qualitative || {};
+        }
+        METRIC_DEFS.forEach(m => {
+          STATE.metrics[row.user_id][m.key][row.month] = row[m.key] ?? null;
+        });
+        // qualitativos
+        ['upgrades','cases','dest_reunioes','dest_nps'].forEach((q, qi) => {
+          const qKey = `${row.user_id}_${row.month}_q${qi}`;
+          if (row[q]) STATE.qualitative[qKey] = row[q];
+        });
+      });
+    }
+    // Garantir arrays para CS's sem dados ainda
+    STATE.csList.forEach(cs => {
+      if (!STATE.metrics[cs.id]) {
+        STATE.metrics[cs.id] = {};
+        METRIC_DEFS.forEach(m => { STATE.metrics[cs.id][m.key] = Array(12).fill(null); });
+      }
+    });
+  } catch(e) {
+    console.error('Erro ao carregar dados:', e);
+    showToast('Erro ao conectar com o banco de dados');
+  }
+  showLoading(false);
+}
+
+// ─── SUPABASE: salvar métrica individual ─────────────────────────────────────
+
+async function saveMetricToSupabase(csId, mi) {
+  const year = new Date().getFullYear();
+  const row = { user_id: csId, year, month: mi };
+  METRIC_DEFS.forEach(m => { row[m.key] = STATE.metrics[csId]?.[m.key]?.[mi] ?? null; });
+  // qualitativos
+  ['upgrades','cases','dest_reunioes','dest_nps'].forEach((q, qi) => {
+    row[q] = STATE.qualitative?.[`${csId}_${mi}_q${qi}`] ?? null;
+  });
+  const { error } = await sb.from('metrics').upsert(row, { onConflict: 'user_id,year,month' });
+  if (error) { console.error(error); showToast('Erro ao salvar'); return false; }
+  return true;
+}
+
+// ─── SUPABASE: salvar metas ───────────────────────────────────────────────────
+
+async function saveGoalsToSupabase() {
+  const { data: existing } = await sb.from('goals').select('id').limit(1).single();
+  const payload = { ...STATE.goals };
+  let error;
+  if (existing?.id) {
+    ({ error } = await sb.from('goals').update(payload).eq('id', existing.id));
+  } else {
+    ({ error } = await sb.from('goals').insert(payload));
+  }
+  if (error) { console.error(error); showToast('Erro ao salvar metas'); return false; }
+  return true;
+}
+
+function showLoading(show) {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(247,246,243,0.85);display:flex;align-items:center;justify-content:center;z-index:500;font-size:14px;color:#6B6A63;';
+    el.innerHTML = '<div>Carregando dados...</div>';
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? 'flex' : 'none';
+}
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+
+function calcPct(m, real) {
+  if (real === null || real === undefined) return null;
+  const meta = STATE.goals[m.key];
+  if (!m.higherBetter) return Math.min(150, Math.round((meta / real) * 100));
+  return Math.round((real / meta) * 100);
+}
+function colorOf(v)    { if(v===null) return '#ccc'; if(v>=90) return '#1D9E75'; if(v>=60) return '#BA7517'; return '#E24B4A'; }
+function colorCls(v)   { if(v===null) return 'c-muted'; if(v>=90) return 'c-green'; if(v>=60) return 'c-amber'; return 'c-red'; }
+function pillCls(v)    { if(v===null) return ''; if(v>=90) return 'pill-g'; if(v>=60) return 'pill-a'; return 'pill-r'; }
+function statusLabel(v){ if(v===null) return '—'; if(v>=90) return 'No prazo'; if(v>=60) return 'Atenção'; return 'Em risco'; }
+function cardStatus(v) { if(v===null) return 'empty'; if(v>=90) return 'ok'; if(v>=60) return 'warn'; return 'bad'; }
+function geralOf(pcts) { const v=pcts.filter(x=>x!==null); return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null; }
+
+function getCsPcts(csId, mi) {
+  return METRIC_DEFS.map(m => calcPct(m, STATE.metrics[csId]?.[m.key]?.[mi] ?? null));
+}
+function getCsGeral(csId, mi) { return geralOf(getCsPcts(csId, mi)); }
+
+function getTeamAvgPct(metricKey, mi) {
+  const vals = STATE.csList.map(cs => {
+    const real = STATE.metrics[cs.id]?.[metricKey]?.[mi];
+    const m = METRIC_DEFS.find(x=>x.key===metricKey);
+    return calcPct(m, real);
+  }).filter(v=>v!==null);
+  return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+}
+
+// ─── CHART REGISTRY ─────────────────────────────────────────────────────────
+
+const CHARTS = {};
+function destroyChart(id) { if(CHARTS[id]){CHARTS[id].destroy();delete CHARTS[id];} }
+
+function makeDoughnut(canvasId, pct, color) {
+  destroyChart(canvasId);
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  const val = Math.min(100, pct !== null ? pct : 0);
+  CHARTS[canvasId] = new Chart(el.getContext('2d'), {
+    type:'doughnut',
+    data:{ datasets:[{ data:[val,Math.max(0,100-val)], backgroundColor:[color,'rgba(0,0,0,0.05)'], borderWidth:0, borderRadius:3 }] },
+    options:{ cutout:'74%', responsive:true, maintainAspectRatio:false, animation:{duration:500}, plugins:{legend:{display:false},tooltip:{enabled:false}} }
+  });
+}
+
+function makeLineChart(canvasId, dataArr) {
+  destroyChart(canvasId);
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  CHARTS[canvasId] = new Chart(el.getContext('2d'), {
+    type:'line',
+    data:{
+      labels: MONTHS_SHORT,
+      datasets:[
+        { label:'Meta geral', data:dataArr, borderColor:'#1D9E75', borderWidth:2,
+          pointBackgroundColor:dataArr.map(v=>v===null?'transparent':colorOf(v)),
+          pointRadius:dataArr.map(v=>v===null?0:4),
+          pointHoverRadius:dataArr.map(v=>v===null?0:6),
+          tension:0.35, fill:{target:'origin',above:'rgba(29,158,117,0.06)'}, spanGaps:false },
+        { label:'90%', data:Array(12).fill(90), borderColor:'rgba(29,158,117,0.2)',
+          borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{duration:400},
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>ctx.datasetIndex===1?'Ref: 90%':(ctx.parsed.y!==null?'Meta: '+ctx.parsed.y+'%':'—') } } },
+      scales:{
+        x:{ grid:{display:false}, ticks:{font:{size:10,family:'DM Sans'},color:'#9E9D96'} },
+        y:{ min:0,max:120, grid:{color:'rgba(0,0,0,0.04)',lineWidth:0.5}, ticks:{font:{size:10,family:'DM Sans'},color:'#9E9D96',maxTicksLimit:5,callback:v=>v+'%'} }
+      }
+    }
+  });
+}
+
+// ─── TOAST ──────────────────────────────────────────────────────────────────
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ─── MODAL ──────────────────────────────────────────────────────────────────
+
+let _modalCsId = null;
+let _modalMi = null;
+
+function openModal(csId, mi) {
+  _modalCsId = csId; _modalMi = mi;
+  const cs = STATE.csList.find(c=>c.id===csId);
+  document.getElementById('modal-title').textContent = `Lançar métricas — ${cs.name} · ${MONTHS_FULL[mi]}`;
+  const fields = document.getElementById('modal-fields');
+  fields.innerHTML = '';
+  METRIC_DEFS.forEach(m => {
+    const current = STATE.metrics[csId]?.[m.key]?.[mi];
+    const meta = STATE.goals[m.key];
+    fields.innerHTML += `
+      <div class="field">
+        <label>${m.label}</label>
+        <input type="number" id="inp-${m.key}" step="0.01"
+          value="${current !== null && current !== undefined ? current : ''}"
+          placeholder="Meta: ${meta}${m.unit||''}">
+      </div>`;
+  });
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+function saveMetrics() {
+  if (!_modalCsId || _modalMi === null) return;
+  METRIC_DEFS.forEach(m => {
+    const el = document.getElementById('inp-'+m.key);
+    const val = el.value.trim();
+    if (!STATE.metrics[_modalCsId]) STATE.metrics[_modalCsId] = {};
+    if (!STATE.metrics[_modalCsId][m.key]) STATE.metrics[_modalCsId][m.key] = Array(12).fill(null);
+    STATE.metrics[_modalCsId][m.key][_modalMi] = val === '' ? null : parseFloat(val);
+  });
+  saveState();
+  closeModal();
+  showToast('Métricas salvas ✓');
+  renderCurrentPage();
+}
+
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ─── SIDEBAR ────────────────────────────────────────────────────────────────
+
+function buildSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const role = CURRENT_USER?.role || 'cs';
+  let html = '';
+
+  html += `<div class="nav-section">Metas</div>`;
+  if (role === 'cs') {
+    html += navItem('cs-dash', '📊', 'Minha performance');
+  }
+  if (role === 'admin') {
+    if (!CURRENT_USER?.noMetrics) {
+      html += navItem('cs-dash', '👤', 'Minha performance');
+    }
+    html += navItem('sup-dash', '📊', 'Visão do time');
+    html += `<div class="nav-section">Administração</div>`;
+    html += navItem('admin-goals', '🎯', 'Metas e configurações');
+    html += navItem('admin-cs', '🔑', 'Códigos de acesso');
+  }
+
+  html += `<div class="sidebar-footer">
+    <button class="logout-btn" onclick="doLogout()">
+      <span>↩</span> Sair
+    </button>
+  </div>`;
+
+  sidebar.innerHTML = html;
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.addEventListener('click', () => navigateTo(el.dataset.page));
+  });
+}
+
+function navItem(page, icon, label) {
+  const isActive = page === STATE.currentPage;
+  return `<div class="nav-item ${isActive?'active':''}" data-page="${page}">
+    <span class="nav-icon">${icon}</span>${label}
+  </div>`;
+}
+
+function navigateTo(page) {
+  STATE.currentPage = page;
+  buildSidebar();
+  renderCurrentPage();
+}
+
+// ─── MONTH STRIP ────────────────────────────────────────────────────────────
+
+function monthStrip(containerId, onSelect) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = MONTHS_SHORT.map((m,i) =>
+    `<div class="mtab ${i===STATE.currentMonth?'active':''}" onclick="selectMonth(${i},'${containerId}')">${m}</div>`
+  ).join('');
+}
+
+function selectMonth(mi, containerId) {
+  STATE.currentMonth = mi;
+  document.querySelectorAll('.mtab').forEach((el,i) => el.classList.toggle('active', i===mi));
+  renderCurrentPage();
+}
+
+// ─── PAGE: CS DASHBOARD ─────────────────────────────────────────────────────
+
+function renderCsDash() {
+  const mi = STATE.currentMonth;
+  const main = document.getElementById('main-content');
+
+  // Everyone sees their OWN data here — admin or CS
+  const cs = STATE.csList.find(c => c.id === CURRENT_USER?.id);
+
+  if (!cs) {
+    main.innerHTML = `
+      <div class="page active">
+        <div class="page-header"><div><div class="page-title">Minha performance</div></div></div>
+        <div class="card" style="text-align:center;padding:48px 24px;">
+          <div style="font-size:36px;margin-bottom:14px;">📋</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Perfil de CS não encontrado</div>
+          <p style="color:var(--text-2);font-size:13px;line-height:1.6;">Seu perfil ainda não foi vinculado a um slot de CS.<br>Entre em contato com o administrador.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const pcts = getCsPcts(cs.id, mi);
+  const geral = geralOf(pcts);
+  const prevGeral = mi > 0 ? geralOf(getCsPcts(cs.id, mi-1)) : null;
+  const diff = (geral!==null && prevGeral!==null) ? geral-prevGeral : null;
+  const acima = pcts.filter(v=>v!==null&&v>=90).length;
+  const evo = MONTHS_SHORT.map((_,i) => geralOf(getCsPcts(cs.id, i)));
+
+  main.innerHTML = `
+    <div class="page active" id="page-cs-dash">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Minha performance</div>
+          <div class="page-sub">${MONTHS_FULL[mi]} 2026 · ${cs.name}</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div class="month-strip" id="ms-cs"></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Meta geral do mês</div>
+          <div class="stat-value ${colorCls(geral)}">${geral!==null?geral+'%':'—'}</div>
+          <div class="stat-sub">${diff!==null?`${diff>=0?'↑':'↓'} ${Math.abs(diff)}pp vs ${MONTHS_SHORT[mi-1]}`:'Sem dados anteriores'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Métricas no prazo</div>
+          <div class="stat-value">${acima} <span style="font-size:16px;color:var(--text-3)">/ 6</span></div>
+          <div class="stat-sub">${MONTHS_FULL[mi]}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Status</div>
+          <div class="stat-value ${colorCls(geral)}" style="font-size:18px;font-weight:500;padding-top:4px;">${statusLabel(geral)}</div>
+          <div class="stat-sub">Baseado na meta geral</div>
+        </div>
+      </div>
+
+      <div class="metrics-grid" id="metrics-grid"></div>
+
+      <div class="bottom-row">
+        <div class="card">
+          <div class="card-title">Evolução anual — meta geral</div>
+          <div class="chart-wrap"><canvas id="line-cs"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Campos qualitativos</div>
+          ${['Upgrades','Cases de sucesso','Destaque reuniões','Destaque NPS'].map((label,qi) => {
+            const qKey = `${cs.id}_${mi}_q${qi}`;
+            const val = STATE.qualitative?.[qKey] || '';
+            return `<div class="qual-field">
+              <div class="qual-label">${label}</div>
+              <textarea class="qual-input" rows="2" onchange="saveQual('${qKey}',this.value)" placeholder="${label}...">${val}</textarea>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  monthStrip('ms-cs');
+
+  const grid = document.getElementById('metrics-grid');
+  METRIC_DEFS.forEach((m, idx) => {
+    const p = pcts[idx];
+    const real = STATE.metrics[cs.id]?.[m.key]?.[mi];
+    const cid = `mc-${idx}`;
+    const card = document.createElement('div');
+    card.className = `metric-card ${cardStatus(p)}`;
+    card.innerHTML = `
+      <div class="metric-name">${m.label}</div>
+      <div class="metric-chart-wrap">
+        <canvas id="${cid}" width="100" height="100"></canvas>
+        <div class="metric-pct ${colorCls(p)}">${p!==null?p+'%':'—'}</div>
+      </div>
+      <div class="metric-inline-edit">
+        <div class="metric-realizado-row" id="view-${cs.id}-${m.key}-${mi}">
+          <span class="metric-real-val">${real!==null&&real!==undefined?real+(m.unit||''):'—'}</span>
+          <span class="metric-meta-hint">meta: ${STATE.goals[m.key]}${m.unit||''}</span>
+          <button class="inline-edit-btn" onclick="startInlineEdit('${cs.id}','${m.key}',${mi})">Editar</button>
+        </div>
+        <div class="metric-edit-row" id="edit-${cs.id}-${m.key}-${mi}" style="display:none;">
+          <input type="number" class="inline-input" id="inp-${cs.id}-${m.key}-${mi}"
+            value="${real!==null&&real!==undefined?real:''}"
+            placeholder="${STATE.goals[m.key]}"
+            step="0.01"
+            onkeydown="if(event.key==='Enter')saveInline('${cs.id}','${m.key}',${mi});if(event.key==='Escape')cancelInlineEdit('${cs.id}','${m.key}',${mi})">
+          <button class="inline-save-btn" onclick="saveInline('${cs.id}','${m.key}',${mi})">✓</button>
+          <button class="inline-cancel-btn" onclick="cancelInlineEdit('${cs.id}','${m.key}',${mi})">✕</button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+    setTimeout(() => makeDoughnut(cid, p, colorOf(p)), 30);
+  });
+
+  setTimeout(() => makeLineChart('line-cs', evo), 60);
+}
+
+function switchCsDash(csId) {
+  STATE.currentCs = csId;
+  renderSupDash();
+}
+
+function startInlineEdit(csId, key, mi) {
+  document.getElementById(`view-${csId}-${key}-${mi}`).style.display = 'none';
+  const editRow = document.getElementById(`edit-${csId}-${key}-${mi}`);
+  editRow.style.display = 'flex';
+  setTimeout(() => document.getElementById(`inp-${csId}-${key}-${mi}`)?.focus(), 50);
+}
+
+function cancelInlineEdit(csId, key, mi) {
+  document.getElementById(`edit-${csId}-${key}-${mi}`).style.display = 'none';
+  document.getElementById(`view-${csId}-${key}-${mi}`).style.display = 'flex';
+}
+
+async function saveInline(csId, key, mi) {
+  const inp = document.getElementById(`inp-${csId}-${key}-${mi}`);
+  const val = inp.value.trim();
+  if (!STATE.metrics[csId]) STATE.metrics[csId] = {};
+  if (!STATE.metrics[csId][key]) STATE.metrics[csId][key] = Array(12).fill(null);
+  STATE.metrics[csId][key][mi] = val === '' ? null : parseFloat(val);
+  const ok = await saveMetricToSupabase(csId, mi);
+  if (ok) showToast('Salvo ✓');
+  renderCsDash();
+}
+
+async function saveQual(key, val) {
+  if (!STATE.qualitative) STATE.qualitative = {};
+  STATE.qualitative[key] = val;
+  // key format: csId_month_qN — extract csId and month
+  const parts = key.split('_');
+  const csId = parts[0];
+  const mi   = parseInt(parts[1]);
+  await saveMetricToSupabase(csId, mi);
+}
+
+// ─── PAGE: SUPERVISOR ───────────────────────────────────────────────────────
+
+function renderSupDash() {
+  const mi = STATE.currentMonth;
+
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page active" id="page-sup">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Visão do time</div>
+          <div class="page-sub">${MONTHS_FULL[mi]} 2026</div>
+        </div>
+        <div class="month-strip" id="ms-sup"></div>
+      </div>
+
+      <div class="sup-charts-grid" id="sup-metric-cards"></div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;">
+        <div class="card">
+          <div class="card-title">Evolução anual do time — meta geral média</div>
+          <div class="chart-wrap"><canvas id="line-sup"></canvas></div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div style="padding:18px 18px 0;" class="card-title">Ranking — ${MONTHS_SHORT[mi]}</div>
+          <table class="sup-table" id="ranking-table"></table>
+        </div>
+      </div>
+    </div>`;
+
+  monthStrip('ms-sup');
+
+  // Metric cards (médias)
+  const grid = document.getElementById('sup-metric-cards');
+  METRIC_DEFS.forEach((m, idx) => {
+    const p = getTeamAvgPct(m.key, mi);
+    const cid = `smc-${idx}`;
+    const vals = STATE.csList.map(cs => STATE.metrics[cs.id]?.[m.key]?.[mi]).filter(v=>v!==null&&v!==undefined);
+    const avg = vals.length ? parseFloat((vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1)) : null;
+    const card = document.createElement('div');
+    card.className = `metric-card ${cardStatus(p)}`;
+    card.innerHTML = `
+      <div class="metric-name">${m.label}</div>
+      <div class="metric-chart-wrap">
+        <canvas id="${cid}" width="100" height="100"></canvas>
+        <div class="metric-pct ${colorCls(p)}">${p!==null?p+'%':'—'}</div>
+      </div>
+      <div class="metric-detail">Média: <strong>${avg!==null?avg+(m.unit||''):'—'}</strong> · Meta: ${STATE.goals[m.key]}${m.unit||''}</div>`;
+    grid.appendChild(card);
+    setTimeout(() => makeDoughnut(cid, p, colorOf(p)), 30);
+  });
+
+  // Ranking table
+  const rows = STATE.csList.map(cs => {
+    const pcts = getCsPcts(cs.id, mi);
+    return { cs, g:geralOf(pcts) };
+  }).sort((a,b)=>(b.g||0)-(a.g||0));
+
+  const table = document.getElementById('ranking-table');
+  table.innerHTML = `<thead><tr><th>#</th><th>CS</th><th>Meta geral</th><th>Status</th></tr></thead>`;
+  rows.forEach(({cs,g},i) => {
+    table.innerHTML += `<tr>
+      <td style="color:var(--text-3);font-weight:600">${i+1}</td>
+      <td><div class="name-cell"><div class="avatar av-${cs.avIdx}">${cs.initials}</div>${cs.name.split(' ')[0]}</div></td>
+      <td class="${colorCls(g)}" style="font-weight:600">${g!==null?g+'%':'—'}</td>
+      <td><span class="pill ${pillCls(g)}">${statusLabel(g)}</span></td>
+    </tr>`;
+  });
+
+  // Team evolution line
+  const teamEvo = MONTHS_SHORT.map((_,i) => {
+    const gerais = STATE.csList.map(cs=>getCsGeral(cs.id,i)).filter(v=>v!==null);
+    return gerais.length ? Math.round(gerais.reduce((a,b)=>a+b,0)/gerais.length) : null;
+  });
+  setTimeout(() => makeLineChart('line-sup', teamEvo), 60);
+}
+
+// ─── PAGE: ADMIN GOALS ──────────────────────────────────────────────────────
+
+function renderAdminGoals() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-header">
+        <div><div class="page-title">Metas e configurações</div><div class="page-sub">Aplicadas a todos os CS's</div></div>
+        <button class="btn btn-primary" onclick="saveGoals()">Salvar metas</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Metas mensais</div>
+        <div class="admin-grid">
+          ${METRIC_DEFS.map(m=>`
+            <div class="field">
+              <label>${m.label}${m.higherBetter?'':' (máximo)'}</label>
+              <input type="number" id="goal-${m.key}" value="${STATE.goals[m.key]}" step="0.1">
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+async function saveGoals() {
+  METRIC_DEFS.forEach(m => {
+    const el = document.getElementById('goal-'+m.key);
+    if (el) STATE.goals[m.key] = parseFloat(el.value) || STATE.goals[m.key];
+  });
+  const ok = await saveGoalsToSupabase();
+  if (ok) showToast('Metas salvas ✓');
+}
+
+// ─── PAGE: ADMIN CS ─────────────────────────────────────────────────────────
+
+function renderAdminCs() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-header">
+        <div><div class="page-title">Códigos de acesso</div>
+          <div class="page-sub">Distribua o código para cada pessoa por mensagem</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-title">Usuários cadastrados</div>
+        ${USERS.map(u => `
+          <div class="cs-list-row">
+            <div class="name-cell">
+              <div class="avatar av-${u.avIdx}">${u.initials}</div>
+              <div>
+                <div style="font-weight:500">${u.name}</div>
+                <div style="font-size:11px;color:var(--text-3)">${u.role === 'admin' ? 'Admin' : 'CS Individual'}</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <code style="background:var(--surface2);border:1px solid var(--border);padding:4px 12px;border-radius:6px;font-size:13px;letter-spacing:2px;">${u.pin}</code>
+              <button class="action-btn" onclick="copyPin('${u.pin}','${u.name}')">Copiar</button>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="card" style="background:var(--amber-light);border-color:var(--amber);">
+        <div style="font-size:13px;color:var(--amber);font-weight:500;margin-bottom:6px;">Como adicionar novos usuários</div>
+        <p style="font-size:12px;color:var(--amber);line-height:1.7;">
+          Abra o arquivo <code style="background:rgba(0,0,0,0.08);padding:1px 6px;border-radius:4px;">clint_metas.html</code> em qualquer editor de texto,
+          localize o array <code style="background:rgba(0,0,0,0.08);padding:1px 6px;border-radius:4px;">const USERS</code> no início do script,
+          e adicione uma linha seguindo o padrão comentado. Depois distribua o PIN para a pessoa.
+        </p>
+      </div>
+    </div>`;
+}
+
+function copyPin(pin, name) {
+  navigator.clipboard?.writeText(pin).then(() => showToast(`PIN de ${name.split(' ')[0]} copiado ✓`))
+    .catch(() => showToast(`PIN: ${pin}`));
+}
+
+// ─── ROUTER ─────────────────────────────────────────────────────────────────
+
+function renderCurrentPage() {
+  const page = STATE.currentPage || 'cs-dash';
+  if (page === 'cs-dash') renderCsDash();
+  else if (page === 'sup-dash') renderSupDash();
+  else if (page === 'admin-goals') renderAdminGoals();
+  else if (page === 'admin-cs') renderAdminCs();
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
+if (tryRestoreSession()) {
+  bootApp();
+}
+// Otherwise login screen is already visible by default
+</script>
+</body>
+</html>
