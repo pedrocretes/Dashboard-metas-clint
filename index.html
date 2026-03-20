@@ -105,7 +105,6 @@ body { font-family: 'Sora', sans-serif; background: #f7f6f3; min-height: 100vh; 
 </head>
 <body>
 
-<!-- Mostra login direto — sem tela de carregando -->
 <div id="authScreen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;">
   <div class="auth-box">
     <div class="auth-logo">Customer Success · Metas 2026</div>
@@ -221,13 +220,15 @@ function showAuthError(msg){const el=document.getElementById('authError');el.tex
 function hideAuthError(){document.getElementById('authError').style.display='none';}
 
 async function doLogin(){
-  const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPass').value;
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
   if(!email||!pass) return showAuthError('Preencha e-mail e senha.');
   const btn=document.querySelector('#loginForm .auth-btn');
   btn.disabled=true; btn.textContent='Entrando...';
-  const {error}=await sbClient.auth.signInWithPassword({email,password:pass});
+  const {data,error}=await sbClient.auth.signInWithPassword({email,password:pass});
   btn.disabled=false; btn.textContent='Entrar';
-  if(error) showAuthError('E-mail ou senha incorretos.');
+  if(error){ showAuthError('E-mail ou senha incorretos.'); return; }
+  if(data?.session){ booted=true; await bootApp(data.session); }
 }
 
 async function doSignup(){
@@ -238,9 +239,10 @@ async function doSignup(){
   if(pass.length<6) return showAuthError('Senha deve ter ao menos 6 caracteres.');
   const btn=document.querySelector('#signupForm .auth-btn');
   btn.disabled=true; btn.textContent='Criando...';
-  const {error}=await sbClient.auth.signUp({email,password:pass,options:{data:{name}}});
+  const {data,error}=await sbClient.auth.signUp({email,password:pass,options:{data:{name}}});
   btn.disabled=false; btn.textContent='Criar conta';
   if(error) return showAuthError('Erro: '+error.message);
+  if(data?.session){ booted=true; await bootApp(data.session); return; }
   const el=document.getElementById('authError');
   el.textContent='Conta criada! Já pode entrar.';
   el.style.cssText='display:block;background:#f0fdf4;color:#16803c;border-color:#bbf7d0';
@@ -412,22 +414,14 @@ async function bootApp(session){
   render();
 }
 
-// Sem tela de carregando — mostra login direto
-// Se tiver sessão ativa, entra automaticamente em segundo plano
+// Restaura sessão existente ao carregar
+sbClient.auth.getSession().then(({data:{session}})=>{
+  if(session && !booted){ booted=true; bootApp(session); }
+});
+
+// Escuta mudanças de auth
 sbClient.auth.onAuthStateChange(async(event,session)=>{
-  if((event==='INITIAL_SESSION'||event==='SIGNED_IN') && session && !booted){
-    booted=true;
-    await bootApp(session);
-  }
-  if(event==='INITIAL_SESSION' && !session){
-    booted=true;
-    showAuth();
-  }
-  if(event==='SIGNED_OUT'){
-    booted=false;
-    currentUser=null;
-    showAuth();
-  }
+  if(event==='SIGNED_OUT'){ booted=false; currentUser=null; showAuth(); }
 });
 </script>
 </body>
