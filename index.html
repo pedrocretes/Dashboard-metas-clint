@@ -190,10 +190,9 @@ body { font-family: 'Sora', sans-serif; background: #f7f6f3; min-height: 100vh; 
 </div>
 
 <script>
-// ⚠️ PREENCHA COM SEUS DADOS
-const SUPABASE_URL    = 'https://cffchxifzanltnlnavir.supabase.co';
-const SUPABASE_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmZmNoeGlmemFubHRubG5hdmlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTYzOTEsImV4cCI6MjA4OTU5MjM5MX0._5ixYSI8rgpkyzHnCRxblgGpOdpalo0ODsBqb8to8DU';
-const MANAGER_EMAILS  = ['pedro.cretes@clint.digital'];
+const SUPABASE_URL   = 'https://cffchxifzanltnlnavir.supabase.co';
+const SUPABASE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmZmNoeGlmemFubHRubG5hdmlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTYzOTEsImV4cCI6MjA4OTU5MjM5MX0._5ixYSI8rgpkyzHnCRxblgGpOdpalo0ODsBqb8to8DU';
+const MANAGER_EMAILS = ['pedro.cretes@clint.digital'];
 
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -204,17 +203,17 @@ const META = { conversao:60, churn:4, reengajamento:25, cobertura:70, reunioes:[
 let currentUser=null, isManager=false, activeMonth=new Date().getMonth();
 let currentView='own', modalKey=null, userPerf={}, teamData=[];
 
-function switchTab(tab) {
+function switchTab(tab){
   document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='signup')));
-  document.getElementById('loginForm').style.display  = tab==='login'  ? 'block':'none';
-  document.getElementById('signupForm').style.display = tab==='signup' ? 'block':'none';
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('signupForm').style.display=tab==='signup'?'block':'none';
   hideAuthError();
 }
 function showAuthError(msg){const el=document.getElementById('authError');el.textContent=msg;el.style.display='block';}
 function hideAuthError(){document.getElementById('authError').style.display='none';}
 
 async function doLogin(){
-  const email=document.getElementById('loginEmail').value.trim(), pass=document.getElementById('loginPass').value;
+  const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPass').value;
   if(!email||!pass) return showAuthError('Preencha e-mail e senha.');
   const btn=document.querySelector('#loginForm .auth-btn');
   btn.disabled=true; btn.textContent='Entrando...';
@@ -256,9 +255,17 @@ async function loadUserPerf(userId){
 
 async function savePerf(key,value){
   const mes=MONTH_KEYS[activeMonth];
-  const {error}=await sbClient.from('metricas').upsert({user_id:currentUser.id,mes,...userPerf[mes],[key]:value},{onConflict:'user_id,mes'});
-  if(!error){userPerf[mes][key]=value; render();}
-  return !error;
+  // Renova sessão antes de salvar
+  const {data:{session}}=await sbClient.auth.getSession();
+  if(!session){doLogout();return false;}
+  const {error}=await sbClient.from('metricas').upsert(
+    {user_id:currentUser.id,mes,...userPerf[mes],[key]:value},
+    {onConflict:'user_id,mes'}
+  );
+  if(error){console.error('Erro ao salvar:',error);return false;}
+  userPerf[mes][key]=value;
+  render();
+  return true;
 }
 
 async function loadTeamData(){
@@ -290,11 +297,11 @@ function f1(v){return v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumF
 function chipClass(pct){if(pct===null)return 'chip-e';if(pct>=100)return 'chip-g';if(pct>=75)return 'chip-a';return 'chip-r';}
 
 function render(){
-  const mi=activeMonth, mkey=MONTH_KEYS[mi], mp=userPerf[mkey]||{};
+  const mi=activeMonth,mkey=MONTH_KEYS[mi],mp=userPerf[mkey]||{};
   document.getElementById('monthLabel').textContent=MONTHS[mi];
   document.getElementById('mgrMonthLabel').textContent=MONTHS[mi];
   document.getElementById('months').innerHTML=MONTHS.map((m,i)=>{
-    const future=i>new Date().getMonth(), active=i===activeMonth;
+    const future=i>new Date().getMonth(),active=i===activeMonth;
     const cls=active?'active':future?'disabled':'';
     const action=(!future&&!active)?`onclick="setMonth(${i})"` :'';
     return `<button class="mpill ${cls}" ${action}>${m.slice(0,3)}</button>`;
@@ -376,9 +383,9 @@ async function saveModal(){
   if(isNaN(val)) return;
   const btn=document.getElementById('btnSave');
   btn.disabled=true; btn.textContent='Salvando...';
-  await savePerf(modalKey,val);
+  const ok=await savePerf(modalKey,val);
   btn.disabled=false; btn.textContent='Salvar';
-  closeModal();
+  if(ok) closeModal();
 }
 
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target===document.getElementById('overlay')) closeModal();});
@@ -406,14 +413,12 @@ sbClient.auth.onAuthStateChange(async(event,session)=>{
   }
 });
 
-// Recupera sessão existente ao carregar
 sbClient.auth.getSession().then(({data:{session}})=>{
   if(session) bootApp(session);
   else{
     document.getElementById('loading').style.display='none';
     document.getElementById('authScreen').style.display='flex';
   }
-});
 });
 </script>
 </body>
