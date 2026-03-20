@@ -9,8 +9,7 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Sora', sans-serif; background: #f7f6f3; min-height: 100vh; }
-#loading { display:flex; align-items:center; justify-content:center; min-height:100vh; font-size:0.75rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#b0ab9e; }
-#authScreen { display:none; min-height:100vh; align-items:center; justify-content:center; }
+#authScreen { display:flex; min-height:100vh; align-items:center; justify-content:center; }
 .auth-box { background:#fff; border:1.5px solid #eeece8; border-radius:20px; padding:48px 44px; width:380px; box-shadow:0 8px 40px rgba(0,0,0,0.06); }
 .auth-logo { font-size:0.65rem; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#b0ab9e; margin-bottom:8px; }
 .auth-title { font-size:1.6rem; font-weight:300; letter-spacing:-0.03em; color:#1c1a17; margin-bottom:32px; line-height:1.2; }
@@ -106,9 +105,8 @@ body { font-family: 'Sora', sans-serif; background: #f7f6f3; min-height: 100vh; 
 </head>
 <body>
 
-<div id="loading">Carregando...</div>
-
-<div id="authScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;">
+<!-- Mostra login direto — sem tela de carregando -->
+<div id="authScreen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;">
   <div class="auth-box">
     <div class="auth-logo">Customer Success · Metas 2026</div>
     <div class="auth-title">Bem-vindo</div>
@@ -204,14 +202,11 @@ let currentUser=null, isManager=false, activeMonth=new Date().getMonth();
 let currentView='own', modalKey=null, userPerf={}, teamData=[];
 let booted=false;
 
-function hideLoading(){ document.getElementById('loading').style.display='none'; }
 function showAuth(){
-  hideLoading();
   document.getElementById('authScreen').style.display='flex';
   document.getElementById('app').style.display='none';
 }
 function showApp(){
-  hideLoading();
   document.getElementById('authScreen').style.display='none';
   document.getElementById('app').style.display='flex';
 }
@@ -417,24 +412,15 @@ async function bootApp(session){
   render();
 }
 
-// Timeout de segurança — 8s para carregar, senão vai pro login
-const loadingTimeout=setTimeout(()=>{
-  if(!booted){
-    localStorage.clear();
-    showAuth();
-  }
-},8000);
-
-// Único ponto de entrada — usa INITIAL_SESSION para restore correto
+// Sem tela de carregando — mostra login direto
+// Se tiver sessão ativa, entra automaticamente em segundo plano
 sbClient.auth.onAuthStateChange(async(event,session)=>{
   if((event==='INITIAL_SESSION'||event==='SIGNED_IN') && session && !booted){
     booted=true;
-    clearTimeout(loadingTimeout);
     await bootApp(session);
   }
-  if(event==='INITIAL_SESSION' && !session && !booted){
+  if(event==='INITIAL_SESSION' && !session){
     booted=true;
-    clearTimeout(loadingTimeout);
     showAuth();
   }
   if(event==='SIGNED_OUT'){
