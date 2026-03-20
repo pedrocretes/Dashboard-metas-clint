@@ -204,7 +204,6 @@ let currentUser=null, isManager=false, activeMonth=new Date().getMonth();
 let currentView='own', modalKey=null, userPerf={}, teamData=[];
 let booted=false;
 
-function showLoading(){ document.getElementById('loading').style.display='flex'; }
 function hideLoading(){ document.getElementById('loading').style.display='none'; }
 function showAuth(){
   hideLoading();
@@ -418,34 +417,29 @@ async function bootApp(session){
   render();
 }
 
-// Timeout de segurança — se travar, limpa e vai pro login
-const loadingTimeout = setTimeout(()=>{
+// Timeout de segurança — 8s para carregar, senão vai pro login
+const loadingTimeout=setTimeout(()=>{
   if(!booted){
     localStorage.clear();
     showAuth();
   }
-},4000);
+},8000);
 
+// Único ponto de entrada — usa INITIAL_SESSION para restore correto
 sbClient.auth.onAuthStateChange(async(event,session)=>{
-  if(event==='SIGNED_IN' && !booted){
+  if((event==='INITIAL_SESSION'||event==='SIGNED_IN') && session && !booted){
     booted=true;
     clearTimeout(loadingTimeout);
     await bootApp(session);
   }
+  if(event==='INITIAL_SESSION' && !session && !booted){
+    booted=true;
+    clearTimeout(loadingTimeout);
+    showAuth();
+  }
   if(event==='SIGNED_OUT'){
     booted=false;
     currentUser=null;
-    showAuth();
-  }
-});
-
-sbClient.auth.getSession().then(({data:{session}})=>{
-  if(session && !booted){
-    booted=true;
-    clearTimeout(loadingTimeout);
-    bootApp(session);
-  } else if(!session){
-    clearTimeout(loadingTimeout);
     showAuth();
   }
 });
