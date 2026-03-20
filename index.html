@@ -461,3 +461,137 @@ async function loadTeamData() {
 
 function pctKPI(key,val,mi) {
   if (val===null||val===undefined) return null;
+  if (key==='churn') return META.churn/val*100;
+  if (key==='reunioes') return val/META.reunioes[mi]*100;
+  return val/META[key]*100;
+}
+
+function globalScore(perfMonth,mi) {
+  const keys=['conversao','churn','reengajamento','cobertura','reunioes','nps'];
+  const vals=keys.map(k=>pctKPI(k,perfMonth[k],mi)).filter(v=>v!==null);
+  if (!vals.length) return null;
+  return vals.map(v=>Math.min(v,200)).reduce((a,b)=>a+b,0)/vals.length;
+}
+
+function f1(v) { return v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function chipClass(pct) { if(pct===null)return 'chip-e'; if(pct>=100)return 'chip-g'; if(pct>=75)return 'chip-a'; return 'chip-r'; }
+
+function render() {
+  const mi=activeMonth, mkey=MONTH_KEYS[mi], mp=userPerf[mkey]||{};
+  document.getElementById('monthLabel').textContent=MONTHS[mi];
+  document.getElementById('mgrMonthLabel').textContent=MONTHS[mi];
+  document.getElementById('months').innerHTML=MONTHS.map((m,i)=>{
+    const future=i>new Date().getMonth(), active=i===activeMonth;
+    const cls=active?'active':future?'disabled':'';
+    const action=(!future&&!active)?`onclick="setMonth(${i})"` :'';
+    return `<button class="mpill ${cls}" ${action}>${m.slice(0,3)}</button>`;
+  }).join('');
+  if (currentView==='own') renderOwn(mi,mkey,mp); else renderTeam(mi);
+}
+
+function renderOwn(mi,mkey,mp) {
+  const gbl=globalScore(mp,mi);
+  document.getElementById('globalNumber').textContent=gbl!==null?f1(gbl)+'%':'—';
+  document.getElementById('globalSub').textContent=gbl===null?'Sem dados':gbl>=100?'Meta atingida':`${f1(100-gbl)} p.p. abaixo da meta`;
+  const R=36,cx=48,cy=48,circ=2*Math.PI*R,clamp=gbl!==null?Math.min(gbl,100):0;
+  const arcColor=gbl===null?'#2e2b26':gbl>=100?'#4ade80':gbl>=75?'#fbbf24':'#f87171';
+  document.getElementById('globalArc').innerHTML=`
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#2e2b26" stroke-width="7"/>
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${arcColor}" stroke-width="7"
+      stroke-linecap="round" stroke-dasharray="${(clamp/100)*circ} ${circ}"
+      transform="rotate(-90 ${cx} ${cy})" style="transition:stroke-dasharray 0.8s cubic-bezier(.4,0,.2,1)"/>`;
+  const BK=[{key:'conversao',label:'Conversão'},{key:'churn',label:'Churn'},{key:'reengajamento',label:'Reengaj.'},{key:'cobertura',label:'Cobertura'},{key:'reunioes',label:'Reuniões'},{key:'nps',label:'NPS'}];
+  document.getElementById('globalBreakdown').innerHTML=BK.map(({key,label})=>{
+    const pv=pctKPI(key,mp[key],mi), clampPv=pv!==null?Math.min(pv,100):0;
+    const col=pv===null?'#2e2b26':pv>=100?'#4ade80':pv>=75?'#fbbf24':'#f87171';
+    return `<div class="gb-item"><span class="gb-name">${label}</span><div class="gb-bar-track"><div class="gb-bar-fill" style="width:${clampPv}%;background:${col}"></div></div><span class="gb-pct">${pv!==null?Math.round(pv)+'%':'—'}</span></div>`;
+  }).join('');
+  const KPI_DEFS=[
+    {key:'conversao',name:'Conversão de Renovação',fmt:v=>v+'%',meta:`Meta ${META.conversao}%`,label:'Realizado (%)'},
+    {key:'churn',name:'Churn do Período',fmt:v=>v+'%',meta:`Meta ≤ ${META.churn}%`,label:'Churn realizado (%)'},
+    {key:'reengajamento',name:'Taxa de Reengajamento',fmt:v=>v+'%',meta:`Meta ${META.reengajamento}%`,label:'Realizado (%)'},
+    {key:'cobertura',name:'Cobertura de Carteira',fmt:v=>v+'%',meta:`Meta ${META.cobertura}%`,label:'Clientes contatados (%)'},
+    {key:'reunioes',name:'Reuniões Realizadas',fmt:v=>String(v),meta:`Meta ${META.reunioes[mi]}`,label:'Reuniões realizadas'},
+    {key:'nps',name:'NPS',fmt:v=>String(v),meta:`Meta ${META.nps}`,label:'NPS alcançado'},
+  ];
+  document.getElementById('grid').innerHTML=KPI_DEFS.map(d=>{
+    const val=mp[d.key], pct=pctKPI(d.key,val,mi), hit=pct!==null&&pct>=100, noData=val===null||val===undefined;
+    return `<div class="kpi">
+      <span class="kpi-status ${noData?'':hit?'s-green':'s-red'}" style="${noData?'background:#e5e0d8':''}"></span>
+      <div class="kpi-name">${d.name}</div>
+      <div class="kpi-number">${noData?'—':d.fmt(val)}</div>
+      <div class="kpi-meta">${d.meta}</div>
+      <button class="kpi-edit" onclick="openModal('${d.key}','${d.name}','${d.label}')">Editar</button>
+    </div>`;
+  }).join('');
+}
+
+function renderTeam(mi) {
+  const mkey=MONTH_KEYS[mi], COLS=['conversao','churn','reengajamento','cobertura','reunioes','nps'];
+  if (!teamData.length) { document.getElementById('mgrBody').innerHTML=`<tr><td colspan="8"><div class="empty-state">Nenhum colaborador encontrado</div></td></tr>`; return; }
+  document.getElementById('mgrBody').innerHTML=teamData.map(member=>{
+    const mp=member.perf[mkey]||{}, gbl=globalScore(mp,mi);
+    const cells=COLS.map(key=>`<td><span class="chip ${chipClass(pctKPI(key,mp[key],mi))}">${pctKPI(key,mp[key],mi)!==null?Math.round(pctKPI(key,mp[key],mi))+'%':'—'}</span></td>`).join('');
+    return `<tr><td>${member.name}</td>${cells}<td><span class="chip ${chipClass(gbl)}">${gbl!==null?f1(gbl)+'%':'—'}</span></td></tr>`;
+  }).join('');
+}
+
+function setMonth(i) { activeMonth=i; render(); }
+
+function setView(v) {
+  currentView=v;
+  document.getElementById('ownView').style.display=v==='own'?'block':'none';
+  document.getElementById('managerView').style.display=v==='team'?'block':'none';
+  document.querySelectorAll('.mgr-btn').forEach((btn,i)=>btn.classList.toggle('active',(i===0&&v==='own')||(i===1&&v==='team')));
+  if (v==='team') loadTeamData().then(render); else render();
+}
+
+function openModal(key,name,label) {
+  modalKey=key;
+  const val=userPerf[MONTH_KEYS[activeMonth]][key];
+  document.getElementById('mLabel').textContent=MONTHS[activeMonth];
+  document.getElementById('mTitle').textContent=name;
+  document.getElementById('mFields').innerHTML=`<div class="mfield"><label>${label}</label><input id="mInput" type="number" step="0.01" value="${val??''}"></div>`;
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('mInput')?.focus(),60);
+}
+
+function closeModal() { document.getElementById('overlay').classList.remove('open'); modalKey=null; }
+
+async function saveModal() {
+  const val=parseFloat(document.getElementById('mInput').value);
+  if (isNaN(val)) return;
+  const btn=document.getElementById('btnSave');
+  btn.disabled=true; btn.textContent='Salvando...';
+  await savePerf(modalKey,val);
+  btn.disabled=false; btn.textContent='Salvar';
+  closeModal();
+}
+
+document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('overlay')) closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+
+async function bootApp(session) {
+  currentUser=session.user;
+  isManager=MANAGER_EMAILS.includes(currentUser.email);
+  if (isManager) document.getElementById('managerToggle').style.display='flex';
+  document.getElementById('userName').textContent=currentUser.user_metadata?.name||currentUser.email.split('@')[0];
+  userPerf=await loadUserPerf(currentUser.id);
+  document.getElementById('loading').style.display='none';
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  render();
+}
+
+supabase.auth.onAuthStateChange(async(event,session)=>{
+  if (session) { await bootApp(session); }
+  else {
+    currentUser=null;
+    document.getElementById('loading').style.display='none';
+    document.getElementById('authScreen').style.display='flex';
+    document.getElementById('app').style.display='none';
+  }
+});
+</script>
+</body>
+</html>
