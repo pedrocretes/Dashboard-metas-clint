@@ -192,7 +192,7 @@ body { font-family: 'Sora', sans-serif; background: #f7f6f3; min-height: 100vh; 
 <script>
 const SUPABASE_URL   = 'https://cffchxifzanltnlnavir.supabase.co';
 const SUPABASE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmZmNoeGlmemFubHRubG5hdmlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTYzOTEsImV4cCI6MjA4OTU5MjM5MX0._5ixYSI8rgpkyzHnCRxblgGpOdpalo0ODsBqb8to8DU';
-const MANAGER_EMAILS = ['pedro.cretes@clint.digital', 'ronni@clint.digital'];
+const MANAGER_EMAILS = ['pedro.cretes@clint.digital','ronni@clint.digital'];
 
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -248,7 +248,7 @@ async function doSignup(){
   btn.disabled=false; btn.textContent='Criar conta';
   if(error) return showAuthError('Erro: '+error.message);
   const el=document.getElementById('authError');
-  el.textContent='Conta criada! Verifique seu e-mail.';
+  el.textContent='Conta criada! Já pode entrar.';
   el.style.cssText='display:block;background:#f0fdf4;color:#16803c;border-color:#bbf7d0';
 }
 
@@ -418,10 +418,18 @@ async function bootApp(session){
   render();
 }
 
-// Único ponto de entrada da sessão
+// Timeout de segurança — se travar, limpa e vai pro login
+const loadingTimeout = setTimeout(()=>{
+  if(!booted){
+    localStorage.clear();
+    showAuth();
+  }
+},4000);
+
 sbClient.auth.onAuthStateChange(async(event,session)=>{
   if(event==='SIGNED_IN' && !booted){
     booted=true;
+    clearTimeout(loadingTimeout);
     await bootApp(session);
   }
   if(event==='SIGNED_OUT'){
@@ -431,12 +439,13 @@ sbClient.auth.onAuthStateChange(async(event,session)=>{
   }
 });
 
-// Verifica sessão existente ao carregar
 sbClient.auth.getSession().then(({data:{session}})=>{
   if(session && !booted){
     booted=true;
+    clearTimeout(loadingTimeout);
     bootApp(session);
   } else if(!session){
+    clearTimeout(loadingTimeout);
     showAuth();
   }
 });
