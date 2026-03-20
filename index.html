@@ -202,6 +202,20 @@ const META = { conversao:60, churn:4, reengajamento:25, cobertura:70, reunioes:[
 
 let currentUser=null, isManager=false, activeMonth=new Date().getMonth();
 let currentView='own', modalKey=null, userPerf={}, teamData=[];
+let booted=false;
+
+function showLoading(){ document.getElementById('loading').style.display='flex'; }
+function hideLoading(){ document.getElementById('loading').style.display='none'; }
+function showAuth(){
+  hideLoading();
+  document.getElementById('authScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+function showApp(){
+  hideLoading();
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+}
 
 function switchTab(tab){
   document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='signup')));
@@ -238,7 +252,11 @@ async function doSignup(){
   el.style.cssText='display:block;background:#f0fdf4;color:#16803c;border-color:#bbf7d0';
 }
 
-async function doLogout(){await sbClient.auth.signOut();}
+async function doLogout(){
+  booted=false;
+  await sbClient.auth.signOut();
+  showAuth();
+}
 
 function emptyPerf(){
   const p={};
@@ -255,7 +273,6 @@ async function loadUserPerf(userId){
 
 async function savePerf(key,value){
   const mes=MONTH_KEYS[activeMonth];
-  // Renova sessão antes de salvar
   const {data:{session}}=await sbClient.auth.getSession();
   if(!session){doLogout();return false;}
   const {error}=await sbClient.from('metricas').upsert(
@@ -397,27 +414,30 @@ async function bootApp(session){
   if(isManager) document.getElementById('managerToggle').style.display='flex';
   document.getElementById('userName').textContent=currentUser.user_metadata?.name||currentUser.email.split('@')[0];
   userPerf=await loadUserPerf(currentUser.id);
-  document.getElementById('loading').style.display='none';
-  document.getElementById('authScreen').style.display='none';
-  document.getElementById('app').style.display='flex';
+  showApp();
   render();
 }
 
+// Único ponto de entrada da sessão
 sbClient.auth.onAuthStateChange(async(event,session)=>{
-  if(session){await bootApp(session);}
-  else{
+  if(event==='SIGNED_IN' && !booted){
+    booted=true;
+    await bootApp(session);
+  }
+  if(event==='SIGNED_OUT'){
+    booted=false;
     currentUser=null;
-    document.getElementById('loading').style.display='none';
-    document.getElementById('authScreen').style.display='flex';
-    document.getElementById('app').style.display='none';
+    showAuth();
   }
 });
 
+// Verifica sessão existente ao carregar
 sbClient.auth.getSession().then(({data:{session}})=>{
-  if(session) bootApp(session);
-  else{
-    document.getElementById('loading').style.display='none';
-    document.getElementById('authScreen').style.display='flex';
+  if(session && !booted){
+    booted=true;
+    bootApp(session);
+  } else if(!session){
+    showAuth();
   }
 });
 </script>
