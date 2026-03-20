@@ -405,6 +405,16 @@ sbClient.auth.onAuthStateChange(async(event,session)=>{
     document.getElementById('app').style.display='none';
   }
 });
+
+// Recupera sessão existente ao carregar
+sbClient.auth.getSession().then(({data:{session}})=>{
+  if(session) bootApp(session);
+  else{
+    document.getElementById('loading').style.display='none';
+    document.getElementById('authScreen').style.display='flex';
+  }
+});
+});
 </script>
 </body>
 </html>
