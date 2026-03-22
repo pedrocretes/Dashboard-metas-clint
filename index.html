@@ -199,22 +199,6 @@ let supTab='media', modalKey=null, modalUid=null;
 let uPerf={}, uMeta={}, teamData=[];
  
 // ── FETCH HELPERS ──────────────────────────────
-async function api(path, opts={}) {
-  const {data:{session}} = await sbClient.auth.getSession();
-  const token = session?.access_token || AKEY;
-  const res = await fetch(SB_URL+'/rest/v1/'+path, {
-    ...opts,
-    headers: {
-      'apikey': SB_KEY,
-      'Authorization': 'Bearer '+token,
-      'Content-Type': 'application/json',
-      ...(opts.headers||{})
-    }
-  });
-  if (res.status===204) return [];
-  return res.json();
-}
- 
 async function GET(table, query='') {
   return api(table+'?'+query+'&select=*');
 }
