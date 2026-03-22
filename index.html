@@ -550,32 +550,48 @@ function showApp() {
 //  DATA
 // ═══════════════════════════════════════════
 async function loadUserPerf(userId) {
-  const {data}=await sb.from('metricas').select('*').eq('user_id',userId);
+  const {data:{session}} = await sb.auth.getSession();
+  const token = session?.access_token || SUPABASE_KEY;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/metricas?user_id=eq.${userId}&select=*`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+  });
+  const data = await res.json();
   const p=emptyPerf();
-  if (data) data.forEach(row=>{ if(p[row.mes]) Object.assign(p[row.mes],{conversao:row.conversao,churn:row.churn,reengajamento:row.reengajamento,cobertura:row.cobertura,reunioes:row.reunioes,nps:row.nps}); });
+  if (Array.isArray(data)) data.forEach(row=>{ if(p[row.mes]) Object.assign(p[row.mes],{conversao:row.conversao,churn:row.churn,reengajamento:row.reengajamento,cobertura:row.cobertura,reunioes:row.reunioes,nps:row.nps}); });
   return p;
 }
  
 async function loadUserMeta(userId) {
-  const {data}=await sb.from('metas_usuario').select('*').eq('user_id',userId);
+  const {data:{session}} = await sb.auth.getSession();
+  const token = session?.access_token || SUPABASE_KEY;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/metas_usuario?user_id=eq.${userId}&select=*`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+  });
+  const data = await res.json();
   const m=emptyMeta();
-  if (data) data.forEach(row=>{ m[row.mes]={conversao:row.conversao,churn:row.churn,reengajamento:row.reengajamento,cobertura:row.cobertura,reunioes:row.reunioes,nps:row.nps}; });
+  if (Array.isArray(data)) data.forEach(row=>{ m[row.mes]={conversao:row.conversao,churn:row.churn,reengajamento:row.reengajamento,cobertura:row.cobertura,reunioes:row.reunioes,nps:row.nps}; });
   return m;
 }
  
 async function loadTeamData() {
-  const [{data:profiles},{data:metricas},{data:metas}] = await Promise.all([
-    sb.from('profiles').select('id,name,email'),
-    sb.from('metricas').select('*'),
-    sb.from('metas_usuario').select('*'),
+  const {data:{session}} = await sb.auth.getSession();
+  const token = session?.access_token || SUPABASE_KEY;
+  const headers = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` };
+  const [r1,r2,r3] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,name,email`, {headers}).then(r=>r.json()),
+    fetch(`${SUPABASE_URL}/rest/v1/metricas?select=*`, {headers}).then(r=>r.json()),
+    fetch(`${SUPABASE_URL}/rest/v1/metas_usuario?select=*`, {headers}).then(r=>r.json()),
   ]);
-  if (!profiles) return;
+  const profiles = Array.isArray(r1)?r1:[];
+  const metricas = Array.isArray(r2)?r2:[];
+  const metas    = Array.isArray(r3)?r3:[];
+  if (!profiles.length) return;
  
   teamData = profiles.map(profile => {
     const p = emptyPerf();
     const m = emptyMeta();
-    if (metricas) metricas.filter(r=>r.user_id===profile.id).forEach(row=>{ if(p[row.mes]) Object.assign(p[row.mes],{conversao:row.conversao,churn:row.churn,reengajamento:row.reengajamento,cobertura:row.cobertura,reunioes:row.reunioes,nps:row.nps}); });
-    if (metas)    metas.filter(r=>r.user_id===profile.id).forEach(row=>{ m[row.mes]={conversao:row.conversao,churn:row.churn,reengajamento:row.reengajamento,cobertura:row.cobertura,reunioes:row.reunioes,nps:row.nps}; });
+    metricas.filter(r=>r.user_id===profile.id).forEach(row=>{ if(p[row.mes]) Object.assign(p[row.mes],{conversao:row.conversao,churn:row.churn,reengajamento:row.reengajamento,cobertura:row.cobertura,reunioes:row.reunioes,nps:row.nps}); });
+    metas.filter(r=>r.user_id===profile.id).forEach(row=>{ m[row.mes]={conversao:row.conversao,churn:row.churn,reengajamento:row.reengajamento,cobertura:row.cobertura,reunioes:row.reunioes,nps:row.nps}; });
     teamMetas[profile.id] = m;
     return {id:profile.id, name:profile.name, email:profile.email, perf:p, meta:m};
   });
@@ -585,19 +601,36 @@ async function savePerfKPI(key, value) {
   const mes = MONTH_KEYS[activeMonth];
   const {data:{session}}=await sb.auth.getSession();
   if (!session) { doLogout(); return false; }
+  const token = session.access_token;
   const row = {user_id:currentUser.id, mes, ...userPerf[mes], [key]:value};
-  const {error}=await sb.from('metricas').upsert(row,{onConflict:'user_id,mes'});
-  if (error) { console.error(error); return false; }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/metricas`, {
+    method:'POST',
+    headers: {
+      'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`,
+      'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(row)
+  });
+  if (!res.ok) { console.error('save error', res.status); return false; }
   userPerf[mes][key]=value;
   return true;
 }
  
 async function saveMetaForUser(userId, metaValues) {
   const mes = MONTH_KEYS[activeMonth];
+  const {data:{session}}=await sb.auth.getSession();
+  if (!session) { doLogout(); return false; }
+  const token = session.access_token;
   const row = {user_id:userId, mes, ...metaValues};
-  const {error}=await sb.from('metas_usuario').upsert(row,{onConflict:'user_id,mes'});
-  if (error) { console.error(error); return false; }
-  // Update local cache
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/metas_usuario`, {
+    method:'POST',
+    headers: {
+      'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`,
+      'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(row)
+  });
+  if (!res.ok) { console.error('save meta error', res.status); return false; }
   const member = teamData.find(m=>m.id===userId);
   if (member) { member.meta[mes]=metaValues; }
   teamMetas[userId] = teamMetas[userId] || emptyMeta();
