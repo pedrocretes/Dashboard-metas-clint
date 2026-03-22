@@ -194,7 +194,7 @@ const MONTHS     = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho
 const MKEYS      = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 const DMETA      = {conversao:60,churn:4,reengajamento:25,cobertura:70,reunioes:80,nps:60};
  
-let user=null, isSup=false, isMgr=false, mi=new Date().getMonth();
+let user=null, isSup=false, isMgr=false, mi=new Date().getMonth(), currentToken=null;
 let supTab='media', modalKey=null, modalUid=null;
 let uPerf={}, uMeta={}, teamData=[];
  
@@ -279,6 +279,7 @@ async function doLogout() {
 // ── BOOT ──────────────────────────────────────
 async function boot(session) {
   user   = session.user;
+  currentToken = session.access_token;
   isSup  = SUPERVISOR.includes(user.email);
   isMgr  = MANAGERS.includes(user.email);
  
@@ -557,15 +558,13 @@ async function saveModal() {
       reunioes:     parseFloat(document.getElementById('m_reunioes').value)||DMETA.reunioes,
       nps:          parseFloat(document.getElementById('m_nps').value)||DMETA.nps,
     };
-    const r=await UPSERT('metas_usuario',mv);
-    ok=!r?.error;
+    ok=await UPSERT('metas_usuario',mv);
     if(ok){ const m=teamData.find(x=>x.id===modalUid); if(m) m.meta[mes]={...mv}; }
   } else {
     const val=parseFloat(document.getElementById('mInput').value);
     if (!isNaN(val)) {
       const row={user_id:user.id, mes, ...uPerf[mes], [modalKey]:val};
-      const r=await UPSERT('metricas',row);
-      ok=!r?.error;
+      ok=await UPSERT('metricas',row);
       if(ok) uPerf[mes][modalKey]=val;
     }
   }
