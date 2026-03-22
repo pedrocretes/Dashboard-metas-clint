@@ -507,7 +507,7 @@ async function doLogin() {
   const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
   btn.disabled=false; btn.textContent='Entrar';
   if (error) { showAuthError('E-mail ou senha incorretos.'); return; }
-  // bootApp will be triggered by onAuthStateChange SIGNED_IN event
+  if (data?.session && !booted) { booted=true; await bootApp(data.session); }
 }
  
 async function doSignup() {
@@ -521,7 +521,7 @@ async function doSignup() {
   const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
   btn.disabled=false; btn.textContent='Criar conta';
   if (error) return showAuthError('Erro: '+error.message);
-  if (data?.session) { return; } // bootApp triggered by onAuthStateChange
+  if (data?.session && !booted) { booted=true; await bootApp(data.session); return; }
   const el=document.getElementById('authError');
   el.textContent='Conta criada! Já pode entrar.';
   el.style.cssText='display:block;background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)';
