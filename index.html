@@ -507,7 +507,7 @@ async function doLogin() {
   const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
   btn.disabled=false; btn.textContent='Entrar';
   if (error) { showAuthError('E-mail ou senha incorretos.'); return; }
-  if (data?.session) { booted=true; await bootApp(data.session); }
+  // bootApp will be triggered by onAuthStateChange SIGNED_IN event
 }
  
 async function doSignup() {
@@ -521,7 +521,7 @@ async function doSignup() {
   const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
   btn.disabled=false; btn.textContent='Criar conta';
   if (error) return showAuthError('Erro: '+error.message);
-  if (data?.session) { booted=true; await bootApp(data.session); return; }
+  if (data?.session) { return; } // bootApp triggered by onAuthStateChange
   const el=document.getElementById('authError');
   el.textContent='Conta criada! Já pode entrar.';
   el.style.cssText='display:block;background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)';
@@ -876,17 +876,29 @@ async function bootApp(session) {
 }
  
 // Session handling
+// Single clean auth handler
 sb.auth.onAuthStateChange(async(event,session)=>{
-  if ((event==='INITIAL_SESSION'||event==='SIGNED_IN') && session && !booted) {
-    booted=true; await bootApp(session);
+  if (event==='SIGNED_IN' && session && !booted) {
+    booted=true;
+    await bootApp(session);
   }
-  if (event==='SIGNED_OUT') { booted=false; currentUser=null; showAuth(); }
+  if (event==='SIGNED_OUT') {
+    booted=false; currentUser=null; showAuth();
+  }
 });
  
-sb.auth.getSession().then(({data:{session}})=>{
-  if (session && !booted) { booted=true; bootApp(session); }
-  else if (!session) { showAuth(); }
-});
+// Restore existing session on page load
+(async()=>{
+  try {
+    const {data:{session}} = await sb.auth.getSession();
+    if (session && !booted) {
+      booted=true;
+      await bootApp(session);
+    }
+  } catch(e) {
+    console.error('Session error:', e);
+  }
+})();
 </script>
 </body>
 </html>
