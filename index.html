@@ -185,9 +185,9 @@ body{font-family:Sora,sans-serif;background:#0D0818;color:#fff;min-height:100vh}
 </div>
  
 <script>
-const URL  = 'https://cffchxifzanltnlnavir.supabase.co';
-const AKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmZmNoeGlmemFubHRubG5hdmlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTYzOTEsImV4cCI6MjA4OTU5MjM5MX0._5ixYSI8rgpkyzHnCRxblgGpOdpalo0ODsBqb8to8DU';
-const SB   = window.supabase.createClient(URL, AKEY);
+const SB_URL = 'https://cffchxifzanltnlnavir.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmZmNoeGlmemFubHRubG5hdmlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTYzOTEsImV4cCI6MjA4OTU5MjM5MX0._5ixYSI8rgpkyzHnCRxblgGpOdpalo0ODsBqb8to8DU';
+const sbClient = window.supabase.createClient(SB_URL, SB_KEY);
 const SUPERVISOR = ['ronni@clint.digital'];
 const MANAGERS   = ['pedro.cretes@clint.digital','ronni@clint.digital'];
 const MONTHS     = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -200,12 +200,12 @@ let uPerf={}, uMeta={}, teamData=[];
  
 // ── FETCH HELPERS ──────────────────────────────
 async function api(path, opts={}) {
-  const {data:{session}} = await SB.auth.getSession();
+  const {data:{session}} = await sbClient.auth.getSession();
   const token = session?.access_token || AKEY;
-  const res = await fetch(URL+'/rest/v1/'+path, {
+  const res = await fetch(SB_URL+'/rest/v1/'+path, {
     ...opts,
     headers: {
-      'apikey': AKEY,
+      'apikey': SB_KEY,
       'Authorization': 'Bearer '+token,
       'Content-Type': 'application/json',
       ...(opts.headers||{})
@@ -247,7 +247,7 @@ async function doLogin() {
   if (!email||!pass) return showMsg('Preencha e-mail e senha.');
   const btn=document.getElementById('loginBtn');
   btn.disabled=true; btn.textContent='Entrando...';
-  const {data,error} = await SB.auth.signInWithPassword({email,password:pass});
+  const {data,error} = await sbClient.auth.signInWithPassword({email,password:pass});
   if (error) { btn.disabled=false; btn.textContent='Entrar'; showMsg('E-mail ou senha incorretos.'); return; }
   btn.disabled=false; btn.textContent='Entrar';
   await boot(data.session);
@@ -261,7 +261,7 @@ async function doSignup() {
   if (pass.length<6) return showMsg('Senha mínimo 6 caracteres.');
   const btn=document.getElementById('signupBtn');
   btn.disabled=true; btn.textContent='Criando...';
-  const {data,error} = await SB.auth.signUp({email,password:pass,options:{data:{name}}});
+  const {data,error} = await sbClient.auth.signUp({email,password:pass,options:{data:{name}}});
   btn.disabled=false; btn.textContent='Criar conta';
   if (error) return showMsg('Erro: '+error.message);
   if (data?.session) { await boot(data.session); return; }
@@ -270,7 +270,7 @@ async function doSignup() {
 }
  
 async function doLogout() {
-  await SB.auth.signOut();
+  await sbClient.auth.signOut();
   user=null; uPerf={}; uMeta={}; teamData=[];
   document.getElementById('authScreen').style.display='flex';
   document.getElementById('app').style.display='none';
@@ -578,8 +578,8 @@ document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===d
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
  
 // ── INIT ─────────────────────────────────────
-SB.auth.getSession().then(({data:{session}})=>{ if(session) boot(session); });
-SB.auth.onAuthStateChange((event,session)=>{ if(event==='SIGNED_OUT'){ document.getElementById('authScreen').style.display='flex'; document.getElementById('app').style.display='none'; } });
+sbClient.auth.getSession().then(({data:{session}})=>{ if(session) boot(session); });
+sbClient.auth.onAuthStateChange((event,session)=>{ if(event==='SIGNED_OUT'){ document.getElementById('authScreen').style.display='flex'; document.getElementById('app').style.display='none'; } });
 </script>
 </body>
 </html>
