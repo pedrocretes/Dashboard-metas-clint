@@ -837,9 +837,11 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
 //  BOOT
 // ═══════════════════════════════════════════
 async function bootApp(session) {
+  console.log('bootApp: iniciando...');
   currentUser  = session.user;
   isManager    = MANAGER_EMAILS.includes(currentUser.email);
   isSupervisor = SUPERVISOR_EMAILS.includes(currentUser.email);
+  console.log('bootApp: user=', currentUser.email, 'supervisor=', isSupervisor);
  
   const name = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
   document.getElementById('userAvatar').textContent = initials(name);
@@ -859,20 +861,30 @@ async function bootApp(session) {
   navHTML += `<button class="logout-btn" onclick="doLogout()">Sair</button>`;
   document.getElementById('navBtns').innerHTML = navHTML;
  
-  // Load data
-  [userPerf, userMeta] = await Promise.all([
-    loadUserPerf(currentUser.id),
-    loadUserMeta(currentUser.id),
-  ]);
+  console.log('bootApp: carregando dados...');
+  try {
+    const [p, m] = await Promise.all([
+      loadUserPerf(currentUser.id),
+      loadUserMeta(currentUser.id),
+    ]);
+    userPerf = p; userMeta = m;
+    console.log('bootApp: dados carregados OK');
+  } catch(e) {
+    console.error('bootApp: erro ao carregar dados:', e);
+  }
  
   if (isSupervisor) {
     document.getElementById('ownView').style.display='none';
     document.getElementById('supView').style.display='flex';
-    await loadTeamData();
+    console.log('bootApp: carregando time...');
+    try { await loadTeamData(); console.log('bootApp: time OK'); }
+    catch(e) { console.error('bootApp: erro time:', e); }
   }
  
+  console.log('bootApp: mostrando app...');
   showApp();
   render();
+  console.log('bootApp: concluído!');
 }
  
 // Session handling
