@@ -213,17 +213,33 @@ async function GET(table, query='') {
 }
  
 async function UPSERT(table, row) {
-  const res = await fetch(SB_URL+'/rest/v1/'+table, {
-    method: 'POST',
-    headers: {
-      'apikey': SB_KEY,
-      'Authorization': 'Bearer '+(currentToken||SB_KEY),
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates,return=minimal'
-    },
+  // Try update first, then insert if not exists
+  const mes = row.mes;
+  const uid = row.user_id;
+  const headers = {
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer '+(currentToken||SB_KEY),
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal'
+  };
+ 
+  // Try PATCH (update) first
+  const patch = await fetch(SB_URL+'/rest/v1/'+table+'?user_id=eq.'+uid+'&mes=eq.'+mes, {
+    method: 'PATCH',
+    headers,
     body: JSON.stringify(row)
   });
-  return res.ok;
+ 
+  if (patch.ok) return true;
+ 
+  // If no row existed (404 or empty), do INSERT
+  const insert = await fetch(SB_URL+'/rest/v1/'+table, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(row)
+  });
+ 
+  return insert.ok;
 }
  
 // ── AUTH ──────────────────────────────────────
