@@ -200,15 +200,30 @@ let uPerf={}, uMeta={}, teamData=[];
  
 // ── FETCH HELPERS ──────────────────────────────
 async function GET(table, query='') {
-  return api(table+'?'+query+'&select=*');
+  const res = await fetch(SB_URL+'/rest/v1/'+table+'?'+(query?query+'&':'')+'select=*', {
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer '+(currentToken||SB_KEY),
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 }
  
-async function UPSERT(table, row, conflict) {
-  return api(table, {
-    method:'POST',
-    headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+async function UPSERT(table, row) {
+  const res = await fetch(SB_URL+'/rest/v1/'+table, {
+    method: 'POST',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer '+(currentToken||SB_KEY),
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
     body: JSON.stringify(row)
   });
+  return res.ok;
 }
  
 // ── AUTH ──────────────────────────────────────
