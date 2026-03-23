@@ -583,7 +583,13 @@ async function saveModal() {
   } else {
     const val=parseFloat(document.getElementById('mInput').value);
     if (!isNaN(val)) {
-      const row={user_id:user.id, mes, ...uPerf[mes], [modalKey]:val};
+      // Build row with only non-null values + the new value
+      const existing = uPerf[mes]||{};
+      const row = {user_id:user.id, mes};
+      ['conversao','churn','reengajamento','cobertura','reunioes','nps'].forEach(k=>{
+        if (existing[k]!==null && existing[k]!==undefined) row[k]=existing[k];
+      });
+      row[modalKey]=val;
       ok=await UPSERT('metricas',row);
       if(ok) uPerf[mes][modalKey]=val;
     }
