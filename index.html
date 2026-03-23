@@ -41,26 +41,47 @@ body{font-family:Sora,sans-serif;background:var(--bg);color:var(--text);min-heig
   --bg:#f7f6f3;
   --bg2:#f0ede8;
   --surface:#ffffff;
-  --surface2:#f5f3ef;
-  --border:#eeece8;
-  --border2:#f0ede8;
+  --surface2:#f0ede8;
+  --border:#dedad4;
+  --border2:#e8e4de;
   --text:#1c1a17;
-  --text2:#6b6258;
-  --text3:#b0ab9e;
-  --text4:#b0ab9e;
+  --text2:#3d3830;
+  --text3:#7a7468;
+  --text4:#7a7468;
   --global-card:#1c1a17;
   --global-text:#6b6456;
-  --kpi-edit:#f5f3ef;
+  --kpi-edit:#f0ede8;
   --note-bg:#fffbeb;
   --note-c:#b45309;
   --note-b:#fde68a;
-  --chip-e-bg:#f7f6f3;
-  --chip-e-c:#b0ab9e;
-  --chip-e-b:#eeece8;
-  --bar-track:rgba(255,255,255,.15);
+  --chip-e-bg:#eeece8;
+  --chip-e-c:#7a7468;
+  --chip-e-b:#dedad4;
+  --bar-track:rgba(0,0,0,.08);
   --input-bg:#f7f6f3;
   --shadow:0 4px 20px rgba(0,0,0,.06);
 }
+ 
+/* LIGHT MODE OVERRIDES */
+[data-theme="light"] .kpi-name{color:#6b6458}
+[data-theme="light"] .kpi-num{color:#1c1a17;font-weight:400}
+[data-theme="light"] .kpi-meta{color:#7a7468}
+[data-theme="light"] .month-label{color:#7a7468}
+[data-theme="light"] .mpill{color:#7a7468}
+[data-theme="light"] .mpill.active{background:#1c1a17;color:#fff;border-color:#1c1a17}
+[data-theme="light"] .username{color:#1c1a17}
+[data-theme="light"] .nbtn{color:#6b6458;border-color:#dedad4}
+[data-theme="light"] .logout-btn{color:#7a7468;border-color:#dedad4}
+[data-theme="light"] .sup-head{color:#6b6458}
+[data-theme="light"] .cs-name{color:#1c1a17}
+[data-theme="light"] .cs-email{color:#7a7468}
+[data-theme="light"] .clint-name{color:#1c1a17}
+[data-theme="light"] .clint-sub{color:#7a7468}
+[data-theme="light"] .gb-pct{color:#3d3830}
+[data-theme="light"] .cs-pct.n{color:#7a7468}
+[data-theme="light"] .kpi{box-shadow:0 2px 12px rgba(0,0,0,.06)}
+[data-theme="light"] .sup-panel{box-shadow:0 2px 12px rgba(0,0,0,.06)}
+[data-theme="light"] #themeBtn{color:#7a7468;border-color:#dedad4}
  
 /* AUTH */
 #authScreen{display:flex;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;gap:28px}
