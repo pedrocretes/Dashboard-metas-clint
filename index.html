@@ -224,6 +224,7 @@ async function UPSERT(table, row) {
   // Check if row exists
   const check = await fetch(SB_URL+'/rest/v1/'+table+'?user_id=eq.'+uid+'&mes=eq.'+mes+'&select=id', { headers });
   const existing = check.ok ? await check.json() : [];
+  console.log('UPSERT check:', table, 'exists:', existing.length, 'token:', currentToken?'ok':'MISSING');
  
   if (existing.length > 0) {
     // UPDATE
@@ -232,6 +233,7 @@ async function UPSERT(table, row) {
       headers: {...headers, 'Prefer': 'return=minimal'},
       body: JSON.stringify(row)
     });
+    console.log('PATCH status:', res.status);
     return res.ok;
   } else {
     // INSERT
@@ -240,6 +242,7 @@ async function UPSERT(table, row) {
       headers: {...headers, 'Prefer': 'return=minimal'},
       body: JSON.stringify(row)
     });
+    console.log('INSERT status:', res.status);
     return res.ok;
   }
 }
@@ -588,6 +591,11 @@ async function saveModal() {
  
   btn.disabled=false; btn.textContent='Salvar';
   if(ok){ closeModal(); render(); }
+  else {
+    btn.textContent='Erro — tente novamente';
+    btn.style.background='#f87171';
+    setTimeout(()=>{ btn.textContent='Salvar'; btn.style.background=''; btn.disabled=false; },3000);
+  }
 }
  
 document.getElementById('overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('overlay')) closeModal(); });
