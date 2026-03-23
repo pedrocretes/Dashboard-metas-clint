@@ -337,6 +337,9 @@ async function boot(session) {
     await loadTeam();
     document.getElementById('supView').style.display='block';
     document.getElementById('ownView').style.display='none';
+  } else {
+    document.getElementById('ownView').style.display='block';
+    document.getElementById('supView').style.display='none';
   }
  
   render();
@@ -408,7 +411,8 @@ function render() {
     return `<button class="mpill ${active?'active':future?'locked':''}" ${!future&&!active?`onclick="setMonth(${i})"`:''} >${m.slice(0,3)}</button>`;
   }).join('');
  
-  if (isSup) renderSup(mkey);
+  const inTeamView = document.getElementById('supView').style.display !== 'none';
+  if (isSup || (isMgr && inTeamView)) renderSup(mkey);
   else renderOwn(mkey);
 }
  
@@ -522,7 +526,14 @@ function setView(v) {
   document.getElementById('ownView').style.display = v==='own'?'block':'none';
   document.getElementById('supView').style.display = v==='team'?'block':'none';
   document.querySelectorAll('.nbtn').forEach((b,i)=>b.classList.toggle('active',i===(v==='own'?0:1)));
-  if (v==='team') loadTeam().then(render); else render();
+  if (v==='team') {
+    loadTeam().then(()=>{
+      supTab='time';
+      render();
+    });
+  } else {
+    render();
+  }
 }
  
 async function setSupTab(tab) {
