@@ -213,33 +213,35 @@ async function GET(table, query='') {
 }
  
 async function UPSERT(table, row) {
-  // Try update first, then insert if not exists
   const mes = row.mes;
   const uid = row.user_id;
   const headers = {
     'apikey': SB_KEY,
     'Authorization': 'Bearer '+(currentToken||SB_KEY),
-    'Content-Type': 'application/json',
-    'Prefer': 'return=minimal'
+    'Content-Type': 'application/json'
   };
  
-  // Try PATCH (update) first
-  const patch = await fetch(SB_URL+'/rest/v1/'+table+'?user_id=eq.'+uid+'&mes=eq.'+mes, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify(row)
-  });
+  // Check if row exists
+  const check = await fetch(SB_URL+'/rest/v1/'+table+'?user_id=eq.'+uid+'&mes=eq.'+mes+'&select=id', { headers });
+  const existing = check.ok ? await check.json() : [];
  
-  if (patch.ok) return true;
- 
-  // If no row existed (404 or empty), do INSERT
-  const insert = await fetch(SB_URL+'/rest/v1/'+table, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(row)
-  });
- 
-  return insert.ok;
+  if (existing.length > 0) {
+    // UPDATE
+    const res = await fetch(SB_URL+'/rest/v1/'+table+'?user_id=eq.'+uid+'&mes=eq.'+mes, {
+      method: 'PATCH',
+      headers: {...headers, 'Prefer': 'return=minimal'},
+      body: JSON.stringify(row)
+    });
+    return res.ok;
+  } else {
+    // INSERT
+    const res = await fetch(SB_URL+'/rest/v1/'+table, {
+      method: 'POST',
+      headers: {...headers, 'Prefer': 'return=minimal'},
+      body: JSON.stringify(row)
+    });
+    return res.ok;
+  }
 }
  
 // ── AUTH ──────────────────────────────────────
