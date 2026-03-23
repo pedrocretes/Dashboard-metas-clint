@@ -537,8 +537,9 @@ function renderSup(mkey) {
 function renderSupMedia(mkey) {
   const keys=['conversao','churn','reengajamento','cobertura','reunioes','nps'];
   const avgs={};
+  const csOnly = teamData.filter(m=>!SUPERVISOR.includes(m.email));
   keys.forEach(key=>{
-    const vals=teamData.map(m=>{
+    const vals=csOnly.map(m=>{
       const mt=getMeta(m.meta,mi);
       return pct(key,(m.perf[mkey]||{})[key],mt);
     }).filter(v=>v!==null);
@@ -573,7 +574,8 @@ function renderSupMedia(mkey) {
 }
  
 function renderSupTime(mkey) {
-  const rows = teamData.length ? teamData.map(member=>{
+  const csOnly2 = teamData.filter(m=>!SUPERVISOR.includes(m.email));
+  const rows = csOnly2.length ? csOnly2.map(member=>{
     const mp=member.perf[mkey]||{}, mt=getMeta(member.meta,mi);
     const gbl=globalScore(member.perf,member.meta,mi);
     const pctCls=gbl===null?'n':gbl>=100?'g':gbl>=75?'a':'r';
@@ -584,7 +586,7 @@ function renderSupTime(mkey) {
     }).join('');
     return `<div class="cs-row">
       <div class="cs-left"><div class="cs-av">${initials(member.name)}</div><div><div class="cs-name">${member.name||'—'}</div><div class="cs-email">${member.email||''}</div></div></div>
-      <div class="cs-right"><div class="chips">${chips}</div><div class="cs-pct ${pctCls}">${gbl!==null?f1(gbl)+'%':'—'}</div><button class="edit-meta-btn" onclick="openMetaModal('${member.id}','${member.name}')">Editar metas</button></div>
+      <div class="cs-right"><div class="chips">${chips}</div><div class="cs-pct ${pctCls}">${gbl!==null?f1(gbl)+'%':'—'}</div><button class="edit-meta-btn" data-uid="${member.id}" data-uname="${(member.name||'').replace(/"/g,'&quot;')}" onclick="openMetaModal(this.dataset.uid,this.dataset.uname)">Editar metas</button></div>
     </div>`;
   }).join('') : '<div class="empty-state">Nenhum colaborador encontrado</div>';
  
@@ -717,7 +719,15 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
  
 sbClient.auth.getSession().then(({data:{session}})=>{ if(session) boot(session); });
-sbClient.auth.onAuthStateChange((event,session)=>{ if(event==='SIGNED_OUT'){ document.getElementById('authScreen').style.display='flex'; document.getElementById('app').style.display='none'; } });
+sbClient.auth.onAuthStateChange((event,session)=>{
+  if (event==='SIGNED_OUT') {
+    document.getElementById('authScreen').style.display='flex';
+    document.getElementById('app').style.display='none';
+  }
+  if ((event==='TOKEN_REFRESHED' || event==='SIGNED_IN') && session) {
+    currentToken = session.access_token;
+  }
+});
 </script>
 </body>
 </html>
