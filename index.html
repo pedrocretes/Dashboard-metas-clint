@@ -988,18 +988,22 @@ async function saveCal() {
   ['conversao','churn','reengajamento','cobertura','nps'].forEach(k=>{
     if (existing[k]!==null && existing[k]!==undefined) row[k] = existing[k];
   });
-  row.reunioes = count;
+  // Use calendar count, but never go below existing numeric value
+  // (preserves old data for users who had number but no names yet)
+  const oldCount = existing.reunioes || 0;
+  const hadNoNames = !existing.reunioes_nomes;
+  row.reunioes = hadNoNames ? Math.max(count, oldCount) : count;
   row.reunioes_nomes = nomesStr;
  
   const ok = await UPSERT('metricas', row);
   if (ok) {
     if (isOwn) {
-      uPerf[mes].reunioes = count;
+      uPerf[mes].reunioes = row.reunioes;
       uPerf[mes].reunioes_nomes = nomesStr;
     } else {
       const member = teamData.find(m=>m.id===targetUid);
       if (member) {
-        member.perf[mes].reunioes = count;
+        member.perf[mes].reunioes = row.reunioes;
         member.perf[mes].reunioes_nomes = nomesStr;
       }
     }
