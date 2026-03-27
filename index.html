@@ -139,7 +139,7 @@ body{font-family:Sora,sans-serif;background:var(--bg);color:var(--text);min-heig
 .gb-fill{height:100%;border-radius:99px;transition:width .7s}
 .gb-pct{font-size:.6rem;font-weight:600;color:rgba(255,255,255,.5);min-width:32px;text-align:right}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
-.kpi{background:var(--surface);border:1.5px solid var(--border);border-radius:15px;padding:22px 20px 18px;position:relative;overflow:hidden}
+.kpi{background:var(--surface);border:1.5px solid var(--border);border-radius:15px;padding:22px 20px 18px;position:relative;overflow:visible}
 .kpi:hover{border-color:rgba(139,33,232,.3)}
 .kpi-name{font-size:.58rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:14px}
 .kpi-num{font-size:2.3rem;font-weight:300;letter-spacing:-.03em;line-height:1;color:#fff}
@@ -149,7 +149,7 @@ body{font-family:Sora,sans-serif;background:var(--bg);color:var(--text);min-heig
 .dot-a{background:#fbbf24;box-shadow:0 0 8px rgba(251,191,36,.4)}
 .dot-r{background:#f87171;box-shadow:0 0 8px rgba(248,113,113,.4)}
 .dot-e{background:rgba(255,255,255,.2)}
-.kpi-edit{position:absolute;bottom:0;left:0;right:0;padding:7px;text-align:center;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);background:var(--surface2);border:none;border-top:1px solid var(--border);cursor:pointer;font-family:Sora,sans-serif;opacity:0;transform:translateY(4px);transition:opacity .18s,transform .18s}
+.kpi-edit{position:absolute;bottom:0;left:0;right:0;border-radius:0 0 13px 13px;padding:7px;text-align:center;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);background:var(--surface2);border:none;border-top:1px solid var(--border);cursor:pointer;font-family:Sora,sans-serif;opacity:0;transform:translateY(4px);transition:opacity .18s,transform .18s}
 .kpi:hover .kpi-edit{opacity:1;transform:translateY(0)}
 .note{padding:9px 15px;background:var(--note-bg);border:1px solid var(--note-b);border-radius:9px;font-size:.68rem;color:var(--note-c);font-weight:500}
 .sup-panel{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;overflow:hidden}
@@ -185,6 +185,8 @@ body{font-family:Sora,sans-serif;background:var(--bg);color:var(--text);min-heig
 .btn-save{flex:1;padding:9px;background:linear-gradient(135deg,#8B21E8,#C832D8);color:#fff;border:none;border-radius:8px;font-family:Sora,sans-serif;font-size:.78rem;font-weight:600;cursor:pointer}
 .btn-save:disabled{opacity:.4;cursor:default}
 .btn-cancel{padding:9px 15px;background:transparent;color:var(--text4);border:1px solid var(--border);border-radius:8px;font-family:Sora,sans-serif;font-size:.78rem;cursor:pointer}
+.kpi-pace-corner{position:absolute;bottom:18px;right:12px;font-size:.68rem;color:#8B21E8;font-weight:600;background:rgba(139,33,232,.12);padding:2px 8px;border-radius:5px;pointer-events:none}
+.kpi-pace-ok{color:#34d399!important;background:rgba(52,211,153,.1)!important}
 .empty-state{padding:40px;text-align:center;font-size:.7rem;color:var(--text3);font-weight:600;letter-spacing:.08em;text-transform:uppercase}
  
 /* ── NOTION-STYLE CALENDAR ── */
@@ -589,12 +591,21 @@ function renderOwn(mkey) {
     {key:'churn',name:'Churn do Período',fmt:v=>v+'%',ml:`Meta ≤ ${meta.churn}%`,el:'Churn realizado (%)'},
     {key:'reengajamento',name:'Taxa de Reengajamento',fmt:v=>v+'%',ml:`Meta ${meta.reengajamento}%`,el:'Realizado (%)'},
     {key:'cobertura',name:'Cobertura de Carteira',fmt:v=>v+'%',ml:`Meta ${meta.cobertura}%`,el:'Clientes contatados (%)'},
-    {key:'reunioes',name:'Reuniões Realizadas',fmt:v=>`<span id="reunioesCount">${v}</span>`,ml:`Meta ${meta.reunioes}`,el:'Reuniões realizadas'},
+    {key:'reunioes',name:'Reuniões Realizadas',fmt:v=>String(v),ml:`Meta ${meta.reunioes}`,el:'Reuniões realizadas',pace:true},
     {key:'nps',name:'NPS',fmt:v=>String(v),ml:`Meta ${meta.nps}`,el:'NPS alcançado'},
   ];
   const grid = KD.map(d=>{
     const val=mp[d.key], p2=pct(d.key,val,meta), nd=val===null||val===undefined;
-    return `<div class="kpi"><span class="dot ${nd?'dot-e':dotCls(p2)}"></span><div class="kpi-name">${d.name}</div><div class="kpi-num">${nd?'—':d.fmt(val)}</div><div class="kpi-meta">${d.ml}</div><button class="kpi-edit" onclick="openPerfModal('${d.key}','${d.name}','${d.el}',${JSON.stringify(val)})">Editar</button></div>`;
+    let paceEl = '';
+    if (d.pace && mi === new Date().getMonth()) {
+      const rpd = reunioesPorDia(nd?0:val, meta.reunioes);
+      if (rpd !== null) {
+        paceEl = `<div class="kpi-pace-corner">📈 ${rpd.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2})}/dia</div>`;
+      } else if (!nd && val >= meta.reunioes) {
+        paceEl = `<div class="kpi-pace-corner kpi-pace-ok">✅ Meta!</div>`;
+      }
+    }
+    return `<div class="kpi"><span class="dot ${nd?'dot-e':dotCls(p2)}"></span><div class="kpi-name">${d.name}</div><div class="kpi-num">${nd?'—':d.fmt(val)}</div><div class="kpi-meta">${d.ml}</div>${paceEl}<button class="kpi-edit" onclick="openPerfModal('${d.key}','${d.name}','${d.el}',${JSON.stringify(val)})">Editar</button></div>`;
   }).join('');
  
   document.getElementById('ownView').innerHTML = `
@@ -1058,6 +1069,30 @@ document.addEventListener('DOMContentLoaded', ()=>{
   if (supOv) supOv.addEventListener('click', e=>{ if(e.target===supOv) closeSupCal(); });
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDayModal(); });
+ 
+// ── UTILS ────────────────────────────────────
+function diasUteisRestantes() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth();
+  // Only relevant for current month
+  if (mi !== mes) return 0;
+  const ultimo = new Date(ano, mes+1, 0).getDate();
+  let uteis = 0;
+  for (let d = hoje.getDate(); d <= ultimo; d++) {
+    const dow = new Date(ano, mes, d).getDay();
+    if (dow !== 0 && dow !== 6) uteis++;
+  }
+  return uteis;
+}
+ 
+function reunioesPorDia(realizadas, meta) {
+  const faltam = meta - realizadas;
+  if (faltam <= 0) return null; // já bateu a meta
+  const dias = diasUteisRestantes();
+  if (dias <= 0) return null;
+  return faltam / dias;
+}
  
 // ── THEME ────────────────────────────────────
 function toggleTheme() {
